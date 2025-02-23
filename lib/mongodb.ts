@@ -1,33 +1,59 @@
-import mongoose from "mongoose";
+import mongoose, { Connection } from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+if (!process.env.MONGODB_URI) {
+  throw new Error('Please add your MONGODB_URI to .env.local')
 }
 
-let cached = global.mongo;
+const MONGODB_URI: string = process.env.MONGODB_URI
+
+interface MongooseConnection {
+  conn: Connection | null
+  promise: Promise<typeof mongoose> | null
+}
+
+let cached: MongooseConnection = (global as any).mongoose
 
 if (!cached) {
-  cached = global.mongo = { conn: null, promise: null };
+  cached = (global as any).mongoose = {
+    conn: null,
+    promise: null,
+  }
 }
 
-async function dbConnect() {
+async function dbConnect(): Promise<Connection> {
   if (cached.conn) {
-    return cached.conn;
+    console.log('Using cached database connection')
+    return cached.conn
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-    };
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    console.log('Connecting to MongoDB...')
+    cached.promise = mongoose.connect(MONGODB_URI, opts)
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+
+  try {
+    const mongooseInstance = await cached.promise
+    cached.conn = mongooseInstance.connection
+    console.log('MongoDB connected successfully')
+    
+    // Add connection event listeners
+    cached.conn.on('error', console.error.bind(console, 'MongoDB connection error:'))
+    cached.conn.once('open', () => {
+      console.log('MongoDB connection opened')
+    })
+    
+    return cached.conn
+  } catch (e) {
+    cached.promise = null
+    console.error('MongoDB connection failed:', e)
+    throw e
+  }
 }
 
-export default dbConnect;
+export default dbConnect 

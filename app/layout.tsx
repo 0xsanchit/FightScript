@@ -1,14 +1,15 @@
 import "./globals.css"
-import { Inter } from "next/font/google"
 import type { Metadata } from "next"
-import Navbar from "@/components/Navbar"
-import Footer from "@/components/Footer"
-
-const inter = Inter({ subsets: ["latin"] })
+import { Providers } from "@/components/providers"
+import Navbar from "@/components/navbar"
+import MouseMoveEffect from "@/components/mouse-move-effect"
 
 export const metadata: Metadata = {
-  title: 'co3pe',
-  description: 'Your game platform description'
+  title: "co3pe - AI Competition Platform",
+  description: "A decentralized platform for AI competitions and development.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({
@@ -17,24 +18,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>
-        <div className="relative min-h-screen">
-          {/* Background gradients */}
-          <div className="pointer-events-none fixed inset-0">
-            <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background" />
-            <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-blue-500/10 blur-[100px]" />
-            <div className="absolute bottom-0 left-0 h-[500px] w-[500px] bg-purple-500/10 blur-[100px]" />
-          </div>
-
-          <div className="relative z-10 flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </div>
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <Providers>
+          <Navbar />
+          <MouseMoveEffect />
+          {children}
+        </Providers>
       </body>
     </html>
   )

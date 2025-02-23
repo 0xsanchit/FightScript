@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import CompetitionsNavbar from "@/components/competitions-navbar"
+import Footer from "@/components/footer"
 
 const competitions = [
   {
@@ -38,6 +39,7 @@ export default function CompetitionsPage() {
           ))}
         </div>
       </main>
+      <Footer />
     </div>
   )
 }

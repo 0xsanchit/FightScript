@@ -1,10 +1,11 @@
-import Navbar from "@/components/Navbar";
-import Hero from "@/app/components/Hero";
-import Features from "@/app/components/Features";
-import { Competitions } from "@/app/components/Competitions";
-import CTA from "@/app/components/CTA";
-import Footer from "@/components/Footer";
-
+import Navbar from "@/components/navbar"
+import Hero from "@/components/hero"
+import Features from "@/components/features"
+import { CTA } from "@/components/cta"
+import Footer from "@/components/footer"
+import { Suspense } from "react"
+import { LoadingState } from "@/components/ui/loading-state"
+import { ClientDashboard } from "@/components/client-dashboard"
 
 export default function Home() {
   return (
@@ -18,10 +19,21 @@ export default function Home() {
 
       <div className="relative z-10">
         <Navbar />
-        <Hero />
-        <Features />
-        <Competitions />
-        <CTA />
+        <main>
+          <Hero />
+          <Features />
+          <section className="py-20 bg-background/60 backdrop-blur-sm">
+            <div className="container mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-12">Active Competitions</h2>
+              <div className="max-w-6xl mx-auto">
+                <Suspense fallback={<LoadingState />}>
+                  <ClientDashboard />
+                </Suspense>
+              </div>
+            </div>
+          </section>
+          <CTA />
+        </main>
         <Footer />
       </div>
     </div>

@@ -1,23 +1,43 @@
-import { Button } from "@/components/ui/button"
-import { Wallet, Code } from "lucide-react"
+"use client"
 
-export default function CTA() {
+import { useWallet } from "@solana/wallet-adapter-react"
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
+import { Button } from "@/components/ui/button"
+import { ArrowRight, Wallet } from "lucide-react"
+import Link from "next/link"
+
+export function CTA() {
+  const { publicKey } = useWallet()
+
   return (
-    <section className="border-t bg-gradient-to-b from-background to-background/80">
-      <div className="container flex flex-col items-center gap-4 py-24 text-center md:py-32">
-        <h2 className="font-bold text-3xl leading-[1.1] sm:text-3xl md:text-5xl">Ready to join the AI revolution?</h2>
-        <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
-          Connect your wallet, upload your AI agents, and start competing in the decentralized arena of Co3pe.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Button size="lg" className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Connect Wallet
-          </Button>
-          <Button size="lg" variant="outline" className="flex items-center gap-2">
-            <Code className="h-5 w-5" />
-            Submit AI Agent
-          </Button>
+    <section className="w-full py-12 md:py-24 lg:py-32">
+      <div className="container px-4 md:px-6">
+        <div className="flex flex-col items-center justify-center space-y-4 text-center">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+              Ready to Get Started?
+            </h2>
+            <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
+              Connect your wallet to start competing in AI competitions and earn rewards.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 min-[400px]:flex-row">
+            {publicKey ? (
+              <Link href="/competitions">
+                <Button className="gap-2">
+                  View Competitions
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <WalletMultiButton 
+                className="flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            )}
+            <Link href="/about">
+              <Button variant="outline">Learn More</Button>
+            </Link>
+          </div>
         </div>
       </div>
     </section>

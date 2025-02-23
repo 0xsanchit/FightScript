@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { User, Twitter, Linkedin } from "lucide-react"
+import { Twitter, Linkedin } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -33,20 +33,11 @@ export default function Footer() {
                   About Us
                 </Link>
               </li>
-              <li>
-                <Link href="/careers" className="text-muted-foreground transition-colors hover:text-primary">
-                  Careers
-                </Link>
-              </li>
             </ul>
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Connect</h3>
             <div className="flex space-x-4">
-              <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-primary">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Dashboard</span>
-              </Link>
               <Link
                 href="https://twitter.com/co3pe"
                 className="text-muted-foreground transition-colors hover:text-primary"

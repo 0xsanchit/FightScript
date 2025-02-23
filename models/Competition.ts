@@ -1,18 +1,22 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const CompetitionSchema = new mongoose.Schema({
-  competitionId: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  name: {
+  title: {
     type: String,
     required: true,
   },
   description: {
     type: String,
-    default: "",
+    required: true,
+  },
+  shortDescription: {
+    type: String,
+    required: true,
+    maxLength: 200
+  },
+  prize: {
+    type: Number,
+    required: true,
   },
   startDate: {
     type: Date,
@@ -22,13 +26,45 @@ const CompetitionSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  status: {
+    type: String,
+    enum: ['upcoming', 'active', 'completed'],
+    default: 'upcoming'
   },
-  scores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Score" }], // Reference to scores
-});
+  category: {
+    type: String,
+    enum: ['computer-vision', 'nlp', 'reinforcement-learning', 'other'],
+    required: true
+  },
+  difficulty: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    required: true
+  },
+  participants: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  submissions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission'
+  }],
+  winner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  rules: [{
+    type: String
+  }],
+  resources: [{
+    title: String,
+    url: String
+  }]
+})
 
-const Competition = mongoose.models.Competition || mongoose.model("Competition", CompetitionSchema);
-
-export default Competition; 
+export default mongoose.models.Competition || mongoose.model('Competition', CompetitionSchema) 

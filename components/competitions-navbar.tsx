@@ -13,8 +13,11 @@ export default function CompetitionsNavbar() {
           <Link href="/competitions" className="transition-colors hover:text-primary">
             Competitions
           </Link>
-          <Link href="/leaderboard" className="transition-colors hover:text-primary">
-            <Trophy className="inline-block mr-1 h-4 w-4" />
+          <Link href="/about" className="transition-colors hover:text-primary">
+            About Us
+          </Link>
+          <Link href="/leaderboard" className="transition-colors hover:text-primary flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
             Leaderboard
           </Link>
         </nav>
@@ -25,6 +28,9 @@ export default function CompetitionsNavbar() {
               <span className="sr-only">Dashboard</span>
             </Button>
           </Link>
+          <Button variant="ghost" size="sm">
+            Docs
+          </Button>
           <Button size="sm">Connect Wallet</Button>
         </div>
       </div>

@@ -1,27 +1,71 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const UserSchema = new mongoose.Schema({
+  walletAddress: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   username: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
   },
-  email: {
+  profileImage: {
     type: String,
-    required: true,
-    unique: true,
+    default: "", // URL to default avatar
   },
-  password: {
+  bio: {
     type: String,
-    required: true,
+    maxLength: 500,
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  stats: {
+    totalAgents: {
+      type: Number,
+      default: 0
+    },
+    competitionsWon: {
+      type: Number,
+      default: 0
+    },
+    tokensEarned: {
+      type: Number,
+      default: 0
+    },
+    winRate: {
+      type: Number,
+      default: 0
+    }
+  },
+  totalEarnings: {
+    type: Number,
+    default: 0
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
-  scores: [{ type: mongoose.Schema.Types.ObjectId, ref: "Score" }],
-});
+  competitions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Competition'
+  }],
+  submissions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission'
+  }],
+  agents: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agent'
+  }],
+  activities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Activity'
+  }]
+})
 
-const User = mongoose.models.User || mongoose.model("User", UserSchema);
-
-export default User; 
+export default mongoose.models.User || mongoose.model('User', UserSchema) 
