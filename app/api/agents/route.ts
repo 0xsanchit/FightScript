@@ -8,17 +8,14 @@ export async function GET(request: Request) {
     const wallet = searchParams.get('wallet')
     
     if (!wallet) {
-      console.error('No wallet provided in request')
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    console.log('Fetching agents for wallet:', wallet) // Debug log
-
     await dbConnect()
     const agents = await Agent.find({ user: wallet })
-      .sort({ winRate: -1 })
-      .limit(10)
-      .lean() // Convert to plain JavaScript objects
+      .select('name category description winRate matchesPlayed matchesWon status')
+      .sort({ createdAt: -1 })
+      .lean()
 
     return NextResponse.json(agents)
   } catch (error) {

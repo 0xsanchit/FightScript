@@ -1,15 +1,14 @@
-import "./globals.css"
 import type { Metadata } from "next"
-import { Providers } from "@/components/providers"
+import { Inter } from "next/font/google"
+import "./globals.css"
 import Navbar from "@/components/navbar"
-import MouseMoveEffect from "@/components/mouse-move-effect"
+import { Providers } from "@/components/providers"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "co3pe - AI Competition Platform",
-  description: "A decentralized platform for AI competitions and development.",
-  icons: {
-    icon: "/favicon.ico",
-  },
+  title: "Co3pe",
+  description: "AI Competition Platform",
 }
 
 export default function RootLayout({
@@ -18,12 +17,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
-          <Navbar />
-          <MouseMoveEffect />
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
         </Providers>
       </body>
     </html>

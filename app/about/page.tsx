@@ -1,11 +1,9 @@
-import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Bot, Brain, Code, Coins, Globe, Shield } from "lucide-react"
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="relative py-20 overflow-hidden">

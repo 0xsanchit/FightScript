@@ -1,25 +1,20 @@
 export interface Agent {
   _id: string
   name: string
-  category: 'chess' | 'strategy' | 'trading' | 'other'
-  description: string
-  status: 'active' | 'under_review' | 'rejected' | 'archived'
+  category: string
+  description?: string
   winRate: number
   matchesPlayed: number
   matchesWon: number
-  createdAt: string
-  lastUpdated: string
-  sourceCode: string
-  competitions: string[]
+  status: string
 }
 
 export interface Activity {
   _id: string
-  user: string
   type: string
   description: string
+  timestamp: string
   metadata?: any
-  timestamp: Date
 }
 
 export interface UserStats {

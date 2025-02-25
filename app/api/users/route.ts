@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
-import User from '@/models/user'
+import User from '@/models/User'
 
 export async function GET(request: Request) {
   try {
@@ -29,11 +29,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { walletAddress } = body
-
-    if (!walletAddress) {
-      return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
-    }
+    const { walletAddress, stats, totalEarnings, ...userData } = body
 
     await dbConnect()
 
@@ -43,8 +39,16 @@ export async function POST(request: Request) {
       return NextResponse.json(existingUser)
     }
 
-    // Create new user
-    const user = await User.create(body)
+    // Create new user with stats
+    const user = await User.create({
+      walletAddress,
+      ...userData,
+      stats,
+      totalEarnings,
+      role: 'user',
+      createdAt: new Date()
+    })
+
     return NextResponse.json(user)
   } catch (error) {
     console.error('Failed to create user:', error)

@@ -8,17 +8,14 @@ export async function GET(request: Request) {
     const wallet = searchParams.get('wallet')
     
     if (!wallet) {
-      console.error('No wallet provided in request')
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
-
-    console.log('Fetching activities for wallet:', wallet) // Debug log
 
     await dbConnect()
     const activities = await Activity.find({ user: wallet })
       .sort({ timestamp: -1 })
       .limit(20)
-      .lean() // Convert to plain JavaScript objects
+      .lean()
 
     return NextResponse.json(activities)
   } catch (error) {
