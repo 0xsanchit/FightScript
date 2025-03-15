@@ -10,6 +10,7 @@ import type { Activity } from "@/types/dashboard"
 import { AgentsList } from "@/app/components/agents-list"
 import { ActivityFeed } from "@/app/components/activity-feed"
 import { LoadingState } from "@/app/components/ui/loading-state"
+import Navbar from "@/components/navbar" // Import the Navbar
 
 export default function DashboardPage() {
   const { publicKey } = useWallet()
@@ -65,7 +66,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
+       
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
       
       <Tabs defaultValue="overview" className="space-y-6">
@@ -147,6 +151,7 @@ export default function DashboardPage() {
           <ActivityFeed activities={activities} />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
-} 
+}
