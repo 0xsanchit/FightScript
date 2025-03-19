@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useWallet } from "@solana/wallet-adapter-react"
+import { toast } from "react-hot-toast"
 import CompetitionsNavbar from "@/components/competitions-navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,22 +16,73 @@ const leaderboardData = [
   { rank: 5, name: "AIBishop", wins: 110, losses: 60 },
 ]
 
+interface UploadResponse {
+  message: string;
+  fileId: string;
+}
+
 export default function ChessArenaPage() {
-  const [file, setFile] = useState<File | null>(null)
+  const { publicKey } = useWallet();
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setFile(event.target.files[0])
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
     }
-  }
+  };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault()
-    // Here you would handle the file upload to your backend
-    console.log("Uploading file:", file)
-    // Reset the file input
-    setFile(null)
-  }
+  const handleUpload = async () => {
+    if (!file || !publicKey) {
+      toast.error('Please select a file and connect your wallet');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('agent', file);
+    formData.append('wallet', publicKey.toString());
+
+    try {
+      const response = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data: UploadResponse = await response.json();
+      toast.success('File uploaded successfully!');
+      
+      // Create activity log for the upload
+      await fetch('http://localhost:5000/api/activities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'agent_submit',
+          title: 'Chess Agent Submitted',
+          description: `Submitted chess agent: ${file.name}`,
+          user: publicKey.toString(),
+          metadata: {
+            fileName: file.name,
+            fileId: data.fileId,
+            competition: 'chess'
+          }
+        }),
+      });
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setUploading(false);
+      setFile(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,10 +92,10 @@ export default function ChessArenaPage() {
 
         <div className="mb-12">
           <h2 className="text-2xl font-semibold mb-4">Upload Your AI Agent</h2>
-          <form onSubmit={handleSubmit} className="flex items-center space-x-4">
+          <form onSubmit={handleUpload} className="flex items-center space-x-4">
             <Input type="file" onChange={handleFileChange} accept=".py,.js,.json" className="flex-grow" />
-            <Button type="submit" disabled={!file}>
-              Upload Agent
+            <Button type="submit" disabled={!file || uploading}>
+              {uploading ? 'Uploading...' : 'Upload Agent'}
             </Button>
           </form>
         </div>

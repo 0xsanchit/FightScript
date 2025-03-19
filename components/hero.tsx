@@ -21,8 +21,10 @@ export default function Hero() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
-        <Button variant="outline" size="lg">
-          Stake
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/stake">
+            Stake
+          </Link>
         </Button>
       </div>
     </section>

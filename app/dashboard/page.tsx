@@ -11,6 +11,7 @@ import { AgentsList } from "@/app/components/agents-list"
 import { ActivityFeed } from "@/app/components/activity-feed"
 import { LoadingState } from "@/app/components/ui/loading-state"
 import Navbar from "@/components/navbar" // Import the Navbar
+import { proxyRequest } from "@/lib/api"
 
 export default function DashboardPage() {
   const { publicKey } = useWallet()
@@ -28,18 +29,15 @@ export default function DashboardPage() {
         const walletAddress = publicKey.toString()
 
         // Fetch user stats
-        const statsRes = await fetch(`/api/user/stats?wallet=${walletAddress}`)
-        const statsData = await statsRes.json()
+        const statsData = await proxyRequest(`/stats?wallet=${walletAddress}`)
         setUserStats(statsData)
 
         // Fetch agents
-        const agentsRes = await fetch(`/api/agents?wallet=${walletAddress}`)
-        const agentsData = await agentsRes.json()
+        const agentsData = await proxyRequest(`/agents?wallet=${walletAddress}`)
         setAgents(agentsData)
 
         // Fetch activities
-        const activitiesRes = await fetch(`/api/activities?wallet=${walletAddress}`)
-        const activitiesData = await activitiesRes.json()
+        const activitiesData = await proxyRequest(`/activities?wallet=${walletAddress}`)
         setActivities(activitiesData)
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -67,7 +65,6 @@ export default function DashboardPage() {
 
   return (
     <div>
-       
       <Navbar />
       <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>

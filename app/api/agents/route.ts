@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
-import Agent from '@/models/agent'
+import { proxyRequest } from '@/lib/api'
 
 export async function GET(request: Request) {
   try {
@@ -11,37 +10,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    await dbConnect()
-    const agents = await Agent.find({ user: wallet })
-      .select('name category description winRate matchesPlayed matchesWon status')
-      .sort({ createdAt: -1 })
-      .lean()
-
-    return NextResponse.json(agents)
+    const data = await proxyRequest(`/agents?wallet=${wallet}`)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to fetch agents:', error)
-    return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch agents' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const walletAddress = await getWalletAddress()
-    if (!walletAddress) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const body = await request.json()
-    await dbConnect()
-
-    const agent = await Agent.create({
-      ...body,
-      user: walletAddress
+    const data = await proxyRequest('/agents', {
+      method: 'POST',
+      body: JSON.stringify(body),
     })
-
-    return NextResponse.json(agent)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to create agent:', error)
-    return NextResponse.json({ error: 'Failed to create agent' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create agent' },
+      { status: 500 }
+    )
   }
 } 

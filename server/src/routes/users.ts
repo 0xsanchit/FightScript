@@ -1,29 +1,66 @@
-   // src/routes/users.ts
-   import { Router } from 'express';
-   import User from '../models/User';
+import express from 'express'
+import dbConnect from '../lib/mongodb'
+import User from '../models/User'
 
-   const router = Router();
+const router = express.Router()
 
-   // Get user by wallet address
-   router.get('/:wallet', async (req, res) => {
-     try {
-       const user = await User.findOne({ walletAddress: req.params.wallet });
-       if (!user) return res.status(404).json({ error: 'User not found' });
-       res.json(user);
-     } catch (error) {
-       res.status(500).json({ error: 'Server error' });
-     }
-   });
+// GET /api/users?wallet=:wallet
+router.get('/', async (req, res) => {
+  try {
+    const { wallet } = req.query
+    
+    if (!wallet) {
+      return res.status(400).json({ error: 'No wallet address provided' })
+    }
 
-   // Create a new user
-   router.post('/', async (req, res) => {
-     try {
-       const newUser = new User(req.body);
-       await newUser.save();
-       res.status(201).json(newUser);
-     } catch (error) {
-       res.status(500).json({ error: 'Server error' });
-     }
-   });
+    await dbConnect()
+    const user = await User.findOne({ walletAddress: wallet }).lean()
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
 
-   export default router; // Ensure this line is present
+    return res.json(user)
+  } catch (error: any) {
+    console.error('Failed to fetch user:', error)
+    return res.status(500).json({ 
+      error: 'Failed to fetch user data', 
+      details: error?.message || 'Unknown error'
+    })
+  }
+})
+
+// POST /api/users
+router.post('/', async (req, res) => {
+  try {
+    const { walletAddress, stats, totalEarnings, ...userData } = req.body
+
+    await dbConnect()
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ walletAddress })
+    if (existingUser) {
+      return res.json(existingUser)
+    }
+
+    // Create new user with stats
+    const user = await User.create({
+      walletAddress,
+      ...userData,
+      stats,
+      totalEarnings,
+      role: 'user',
+      createdAt: new Date()
+    })
+
+    return res.json(user)
+  } catch (error: any) {
+    console.error('Failed to create user:', error)
+    return res.status(500).json({ 
+      error: 'Failed to create user',
+      details: error?.message || 'Unknown error'
+    })
+  }
+})
+
+export default router 

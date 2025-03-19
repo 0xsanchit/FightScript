@@ -1,27 +1,38 @@
-import { Router } from 'express';
-import Agent from '../models/Agent'; // Adjust the path as necessary
+// src/routes/agents.ts
+import express from "express";
+import dbConnect from "../lib/mongodb"; // Correct path
+import Agent from "../models/Agent"; // Correct path
+import User from "../models/User";
 
-const router = Router();
+const router = express.Router();
 
-// Get agents by user wallet address
-router.get('/:wallet', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const agents = await Agent.find({ user: req.params.wallet });
-    res.json(agents);
+    const { wallet } = req.query; // Use query parameters
+
+    if (!wallet) {
+      return res.status(400).json({ error: "No wallet provided" });
+    }
+
+    await dbConnect();
+    
+    // First find the user by wallet address
+    const user = await User.findOne({ walletAddress: wallet });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Then find agents created by this user
+    const agents = await Agent.find({ createdBy: user._id })
+      .select("name category description winRate totalGames totalWins status metadata")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json(agents);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error("Failed to fetch agents:", error);
+    return res.status(500).json({ error: "Failed to fetch agents" });
   }
 });
 
-// Create a new agent
-router.post('/', async (req, res) => {
-  try {
-    const newAgent = new Agent(req.body);
-    await newAgent.save();
-    res.status(201).json(newAgent);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-export default router;
+export default router; // Ensure this line is present

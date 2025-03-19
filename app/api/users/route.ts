@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
-import User from '@/models/User'
+import { proxyRequest } from '@/lib/api'
 
 export async function GET(request: Request) {
   try {
@@ -12,46 +11,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    await dbConnect()
-    const user = await User.findOne({ walletAddress: wallet })
-    
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    return NextResponse.json(user)
+    const data = await proxyRequest(`/users?wallet=${wallet}`)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to fetch user:', error)
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch user' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { walletAddress, stats, totalEarnings, ...userData } = body
-
-    await dbConnect()
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ walletAddress })
-    if (existingUser) {
-      return NextResponse.json(existingUser)
-    }
-
-    // Create new user with stats
-    const user = await User.create({
-      walletAddress,
-      ...userData,
-      stats,
-      totalEarnings,
-      role: 'user',
-      createdAt: new Date()
+    const data = await proxyRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(body),
     })
-
-    return NextResponse.json(user)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to create user:', error)
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create user' },
+      { status: 500 }
+    )
   }
 } 

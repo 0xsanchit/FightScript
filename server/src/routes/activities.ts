@@ -1,26 +1,28 @@
-import { Router } from 'express';
-import Activity from '../models/Activity'; // Adjust the path as necessary
+// src/routes/activities.ts
+import express from "express";
+import dbConnect from "../lib/mongodb";
+import Activity, { IActivityQuery } from "../models/Activity";
 
-const router = Router();
+const router = express.Router();
 
-// Get activities by user wallet address
-router.get('/:wallet', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const activities = await Activity.find({ user: req.params.wallet });
-    res.json(activities);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+    await dbConnect();
+    const { wallet } = req.query;
 
-// Create a new activity
-router.post('/', async (req, res) => {
-  try {
-    const newActivity = new Activity(req.body);
-    await newActivity.save();
-    res.status(201).json(newActivity);
+    const query: IActivityQuery = {};
+    if (wallet) {
+      query.user = wallet as string;
+    }
+
+    const activities = await Activity.find(query)
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return res.json(activities);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error("Failed to fetch activities:", error);
+    return res.status(500).json({ error: "Failed to fetch activities" });
   }
 });
 

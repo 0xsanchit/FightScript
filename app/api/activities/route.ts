@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import dbConnect from '@/lib/mongodb'
-import Activity from '@/models/activity'
+import { proxyRequest } from '@/lib/api'
 
 export async function GET(request: Request) {
   try {
@@ -11,32 +10,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    await dbConnect()
-    const activities = await Activity.find({ user: wallet })
-      .sort({ timestamp: -1 })
-      .limit(20)
-      .lean()
-
-    return NextResponse.json(activities)
+    const data = await proxyRequest(`/activities?wallet=${wallet}`)
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to fetch activities:', error)
-    return NextResponse.json({ error: 'Failed to fetch activities' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch activities' },
+      { status: 500 }
+    )
   }
 }
 
-// Internal function to create activities (not exposed as API)
-export async function createActivity(data: {
-  user: string
-  type: string
-  description: string
-  metadata?: any
-}) {
+export async function POST(request: Request) {
   try {
-    await dbConnect()
-    const activity = await Activity.create(data)
-    return activity
+    const body = await request.json()
+    const data = await proxyRequest('/activities', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to create activity:', error)
-    throw error
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create activity' },
+      { status: 500 }
+    )
   }
 } 
