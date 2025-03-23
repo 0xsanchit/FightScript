@@ -6,14 +6,29 @@ import fs from "fs";
 import path from "path";
 import { drive_v3 } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
+import { ChessEngine } from '../engine/chess-engine'
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const upload = multer({ 
-  dest: "uploads/",
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.py', '.js', '.ts', '.json'];
+    const allowedTypes = ['.js', '.ts', '.py'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedTypes.includes(ext)) {
       cb(null, true);
@@ -22,7 +37,7 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024 // 5MB
   }
 });
 
@@ -38,52 +53,23 @@ const drive = google.drive({
 });
 
 // POST endpoint to handle file uploads
-router.post("/", upload.single("agent"), async (req, res) => {
+router.post("/agent", upload.single("agent"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  // Ensure uploads directory exists
-  const uploadsDir = path.join(process.cwd(), 'uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-  }
-
-  const filePath = path.resolve(req.file.path);
-  const fileMetadata: drive_v3.Schema$File = {
-    name: req.file.originalname,
-    parents: [process.env.GOOGLE_DRIVE_FOLDER_ID || ''],
-  };
-
-  const media = {
-    mimeType: req.file.mimetype,
-    body: fs.createReadStream(filePath),
-  };
-
   try {
-    console.log('Uploading to folder:', process.env.GOOGLE_DRIVE_FOLDER_ID);
-    
-    const response = await drive.files.create({
-      requestBody: fileMetadata,
-      media: media,
-      fields: "id",
+    // Return the file information
+    res.json({
+      message: 'Agent uploaded successfully',
+      agentId: path.basename(req.file.path, path.extname(req.file.path)),
+      originalName: req.file.originalname
     });
-
-    // Delete the local file after uploading
-    fs.unlinkSync(filePath);
-
-    if (response.data && response.data.id) {
-      console.log('File uploaded successfully:', response.data.id);
-      res.json({ 
-        message: "File uploaded successfully", 
-        fileId: response.data.id 
-      });
-    } else {
-      throw new Error("No file ID in response");
-    }
   } catch (error: any) {
-    console.error("Error uploading file to Google Drive:", error);
-    res.status(500).json({ error: "File upload failed", details: error.message });
+    res.status(500).json({ 
+      error: 'Upload failed',
+      details: error.message 
+    });
   }
 });
 

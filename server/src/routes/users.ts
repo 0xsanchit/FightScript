@@ -1,6 +1,7 @@
 import express from 'express'
 import dbConnect from '../lib/mongodb'
 import User from '../models/User'
+import Agent from '../models/Agent'
 
 const router = express.Router()
 
@@ -62,5 +63,39 @@ router.post('/', async (req, res) => {
     })
   }
 })
+
+router.get('/stats', async (req, res) => {
+  const { wallet } = req.query;
+
+  if (!wallet) {
+    return res.status(400).json({ error: 'Wallet address is required' });
+  }
+
+  try {
+    const user = await User.findOne({ walletAddress: wallet });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const agents = await Agent.find({ walletAddress: wallet });
+    const totalGames = agents.reduce((sum, agent) => sum + agent.wins + agent.losses, 0);
+
+    res.json({
+      username: user.username,
+      walletAddress: user.walletAddress,
+      totalGames,
+      agents: agents.map(agent => ({
+        _id: agent._id,
+        name: agent.name,
+        wins: agent.wins,
+        losses: agent.losses,
+        status: agent.status,
+        createdAt: agent.createdAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
 
 export default router 
