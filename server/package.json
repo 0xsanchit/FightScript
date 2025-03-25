@@ -6,7 +6,8 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test-match": "npm run setup && ts-node src/engine/test-match.ts",
+    "compile-bots": "cd src/engine && compile_bots.bat",
+    "test-match": "npm run compile-bots && ts-node src/engine/test-match.ts",
     "setup": "ts-node src/engine/setup.ts"
   },
   "dependencies": {

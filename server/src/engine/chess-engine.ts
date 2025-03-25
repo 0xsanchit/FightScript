@@ -37,7 +37,7 @@ export class ChessEngine {
         if (!fs.existsSync(engineDir)) {
           fs.mkdirSync(engineDir, { recursive: true })
         }
-        throw new Error(`Stockfish engine not found at: ${this.enginePath}. Please download Stockfish and place it in the correct location.`)
+        throw new Error(`Stockfish engine not found at: ${this.enginePath}`)
       }
 
       // Initialize Stockfish
@@ -181,84 +181,92 @@ export class ChessEngine {
     return tempPath
   }
 
-  async runGame(agent1Path: string, agent2Path: string): Promise<{
+  async runMatch(bot1Path: string, bot2Path: string): Promise<{
     winner: number;
     reason: string;
     moves: string[];
   }> {
-    // Wait for engine to be ready before starting game
-    if (!this.isReady) {
-      await this.waitForReady()
-    }
+    let bot1: any = null;
+    let bot2: any = null;  // Declare bots at function scope
 
     try {
-      // Import agents
-      const agent1 = require(agent1Path)
-      const agent2 = require(agent2Path)
+      console.log('Starting bots...');
+      bot1 = spawn(bot1Path, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+      bot2 = spawn(bot2Path, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 
-      // Initialize game
-      let currentFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-      let moves: string[] = []
-      let currentPlayer = 1
-      let moveCount = 0
+      // Initialize UCI mode for both bots
+      console.log('Initializing bots...');
+      bot1.stdin.write('uci\n');
+      bot2.stdin.write('uci\n');
+      bot1.stdin.write('isready\n');
+      bot2.stdin.write('isready\n');
 
-      console.log('Starting new game...')
+      let currentFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+      let moves: string[] = [];
+      let currentPlayer = 1;
+      let moveCount = 0;
 
-      while (moveCount < 50) { // Limit to 50 moves per player
+      // Wait for both bots to be ready
+      await Promise.all([
+        this.waitForBotReady(bot1, "Bot 1"),
+        this.waitForBotReady(bot2, "Bot 2")
+      ]);
+
+      while (moveCount < 50) {
+        const currentBot = currentPlayer === 1 ? bot1 : bot2;
+        const botName = currentPlayer === 1 ? "Bot 1" : "Bot 2";
+        
+        console.log(`\nTurn ${moveCount + 1}, ${botName}'s move`);
+        console.log('Position:', currentFen);
+
         try {
-          const currentAgent = currentPlayer === 1 ? agent1 : agent2
-          const agentName = currentPlayer === 1 ? 'Agent 1' : 'Agent 2'
-          
-          console.log(`\nPosition: ${currentFen}`)
-          console.log(`${agentName}'s turn...`)
-          
-          const move = await Promise.race([
-            currentAgent.getMove(currentFen),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Move timeout')), 10000)
-            )
-          ])
+          // Get move from current bot
+          currentBot.stdin.write(`position fen ${currentFen}\n`);
+          currentBot.stdin.write('go movetime 1000\n');
 
-          if (!move || typeof move !== 'string') {
-            throw new Error('Invalid move format')
-          }
+          const move = await this.getBotMove(currentBot, botName);
+          console.log(`${botName} plays: ${move}`);
 
-          console.log(`${agentName} plays: ${move}`)
-
-          // Validate move
-          const isValid = await this.validateMove(currentFen, move)
-          if (!isValid) {
-            console.log(`Invalid move by ${agentName}: ${move}`)
+          // Validate move format
+          if (!this.isValidMove(move)) {
+            console.log(`Invalid move format from ${botName}: ${move}`);
             return {
               winner: currentPlayer === 1 ? 2 : 1,
-              reason: 'Invalid move',
+              reason: 'Invalid move format',
               moves
-            }
+            };
           }
 
-          moves.push(move)
-          currentFen = await this.getNewPosition(currentFen, move)
+          // Update game state
+          moves.push(move);
           
-          // Check for checkmate or stalemate
-          const gameState = await this.evaluatePosition(currentFen)
+          // Update FEN using Stockfish
+          this.engine.stdin.write(`position fen ${currentFen} moves ${move}\n`);
+          this.engine.stdin.write('d\n');
+
+          // Get new position
+          currentFen = await this.getNewPosition();
+
+          // Check game state
+          const gameState = await this.evaluatePosition(currentFen);
           if (gameState.isGameOver) {
             return {
               winner: gameState.winner,
               reason: gameState.reason,
               moves
-            }
+            };
           }
 
-          currentPlayer = currentPlayer === 1 ? 2 : 1
-          moveCount++
+          moveCount++;
+          currentPlayer = currentPlayer === 1 ? 2 : 1;
 
         } catch (error) {
-          console.error(`Error during ${currentPlayer === 1 ? 'Agent 1' : 'Agent 2'}'s turn:`, error)
+          console.error(`Error during ${botName}'s turn:`, error);
           return {
             winner: currentPlayer === 1 ? 2 : 1,
-            reason: `Agent error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            reason: `Bot error: ${error instanceof Error ? error.message : 'Unknown error'}`,
             moves
-          }
+          };
         }
       }
 
@@ -266,104 +274,106 @@ export class ChessEngine {
         winner: 0,
         reason: 'Draw by move limit',
         moves
-      }
+      };
 
     } catch (error) {
-      throw new Error(`Game failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Match failed:', error);
+      throw error;
+    } finally {
+      // Cleanup bots
+      if (bot1) {
+        try {
+          bot1.stdin.write('quit\n');
+          bot1.kill();
+        } catch (error) {
+          console.error('Error cleaning up bot1:', error);
+        }
+      }
+      if (bot2) {
+        try {
+          bot2.stdin.write('quit\n');
+          bot2.kill();
+        } catch (error) {
+          console.error('Error cleaning up bot2:', error);
+        }
+      }
     }
   }
 
-  async validateMove(fen: string, move: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      let validMoves: string[] = []
-      
+  private waitForBotReady(bot: any, name: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`${name} initialization timeout`));
+      }, 5000);
+
       const handler = (data: Buffer) => {
-        const output = data.toString()
+        const output = data.toString();
+        if (output.includes('uciok')) {
+          bot.stdout.removeListener('data', handler);
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+
+      bot.stdout.on('data', handler);
+    });
+  }
+
+  private getBotMove(bot: any, botName: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`${botName} move timeout`));
+      }, 5000);
+
+      const moveHandler = (data: Buffer) => {
+        const output = data.toString();
         if (output.includes('bestmove')) {
-          this.engine.stdout.removeListener('data', handler)
-          resolve(validMoves.includes(move))
-        } else if (output.includes('info')) {
-          const matches = output.match(/pv\s([a-h][1-8][a-h][1-8])/g)
-          if (matches) {
-            validMoves = matches.map(m => m.split(' ')[1])
+          clearTimeout(timeout);
+          bot.stdout.removeListener('data', moveHandler);
+          const move = output.split('bestmove ')[1].split(' ')[0].trim();
+          if (move && move !== '(none)') {
+            resolve(move);
+          } else {
+            reject(new Error(`${botName} returned invalid move`));
           }
         }
-      }
+      };
 
-      this.engine.stdout.on('data', handler)
-      this.engine.stdin.write(`position fen ${fen}\n`)
-      this.engine.stdin.write('go depth 1\n')
-    })
+      bot.stdout.on('data', moveHandler);
+    });
   }
 
-  async getNewPosition(fen: string, move: string): Promise<string> {
+  private getNewPosition(): Promise<string> {
     return new Promise((resolve) => {
       const handler = (data: Buffer) => {
-        const output = data.toString()
+        const output = data.toString();
         if (output.includes('Fen: ')) {
-          this.engine.stdout.removeListener('data', handler)
-          const newFen = output.split('Fen: ')[1].split('\n')[0]
-          resolve(newFen)
+          this.engine.stdout.removeListener('data', handler);
+          const newFen = output.split('Fen: ')[1].split('\n')[0].trim();
+          resolve(newFen);
         }
-      }
-
-      this.engine.stdout.on('data', handler)
-      this.engine.stdin.write(`position fen ${fen} moves ${move}\n`)
-      this.engine.stdin.write('d\n')
-    })
+      };
+      this.engine.stdout.on('data', handler);
+    });
   }
 
-  private isValidMove(move: ChessMove): boolean {
-    const validSquares = /^[a-h][1-8]$/
-    return (
-      validSquares.test(move.from) &&
-      validSquares.test(move.to) &&
-      (!move.promotion || 'qrbn'.includes(move.promotion.toLowerCase()))
-    )
+  private isValidMove(move: string): boolean {
+    // Validate move format (e.g., "e2e4")
+    return /^[a-h][1-8][a-h][1-8]$/.test(move);
   }
 
-  private convertToUCI(move: ChessMove): string {
-    let uci = `${move.from}${move.to}`
-    if (move.promotion) {
-      uci += move.promotion.toLowerCase()
+  private updatePosition(fen: string, move: string): string {
+    // Simple position update (in real implementation, use Stockfish for this)
+    return fen; // Placeholder
+  }
+
+  private cleanupBot(bot: any) {
+    try {
+      bot.stdin.write('quit\n');
+      bot.kill();
+    } catch (error) {
+      console.error('Error cleaning up bot:', error);
     }
-    return uci
-  }
-
-  private async evaluateGameState(fen: string): Promise<{
-    isOver: boolean
-    winner: number
-    reason: string
-  }> {
-    // Check for checkmate, stalemate, insufficient material, etc.
-    return new Promise((resolve) => {
-      this.engine.stdin.write(`position fen ${fen}\n`)
-      this.engine.stdin.write('eval\n')
-
-      this.engine.stdout.on('data', (data: Buffer) => {
-        const output = data.toString()
-        
-        if (output.includes('mate 0')) {
-          resolve({
-            isOver: true,
-            winner: output.includes('White') ? 1 : 2,
-            reason: 'Checkmate'
-          })
-        } else if (output.includes('stalemate')) {
-          resolve({
-            isOver: true,
-            winner: 0,
-            reason: 'Stalemate'
-          })
-        } else {
-          resolve({
-            isOver: false,
-            winner: 0,
-            reason: ''
-          })
-        }
-      })
-    })
   }
 
   cleanup() {

@@ -3,50 +3,37 @@ import path from 'path';
 import fs from 'fs';
 
 async function runTestMatch() {
-  let engine: ChessEngine | null = null;
+  const engine = new ChessEngine();
   
   try {
-    // Check if agents exist
-    const agent1Path = path.join(__dirname, 'agents', 'random-agent.ts');
-    const agent2Path = path.join(__dirname, 'agents', 'aggressive-agent.ts');
+    console.log('Starting match between C++ bots...');
+    
+    const bot1Path = path.join(__dirname, 'agents', 'random_bot.exe');
+    const bot2Path = path.join(__dirname, 'agents', 'aggressive_bot.exe');
 
-    if (!fs.existsSync(agent1Path)) {
-      throw new Error(`Agent 1 not found at: ${agent1Path}`);
-    }
-    if (!fs.existsSync(agent2Path)) {
-      throw new Error(`Agent 2 not found at: ${agent2Path}`);
+    if (!fs.existsSync(bot1Path) || !fs.existsSync(bot2Path)) {
+      throw new Error('Bot executables not found. Please run npm run compile-bots first.');
     }
 
-    // Initialize engine
-    engine = new ChessEngine();
-    
-    // Get engine info
-    const engineInfo = await engine.getEngineInfo();
-    console.log('Engine Status:', engineInfo);
-
-    console.log('\nStarting match: Random Agent vs Aggressive Agent');
-    
-    const result = await engine.runGame(agent1Path, agent2Path);
+    const result = await engine.runMatch(bot1Path, bot2Path);
 
     console.log('\nMatch Result:');
-    console.log('Winner:', result.winner === 1 ? 'Random Agent' : 'Aggressive Agent');
+    console.log('Winner:', result.winner === 1 ? 'Random Bot' : result.winner === 2 ? 'Aggressive Bot' : 'Draw');
     console.log('Reason:', result.reason);
     console.log('\nMoves played:');
     result.moves.forEach((move, index) => {
-      console.log(`${index + 1}. ${move}`);
+      if (index % 2 === 0) {
+        process.stdout.write(`${Math.floor(index/2) + 1}. ${move} `);
+      } else {
+        console.log(move);
+      }
     });
 
   } catch (error) {
-    console.error('Test match failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Test match failed:', error);
   } finally {
-    if (engine) {
-      engine.cleanup();
-    }
+    engine.cleanup();
   }
 }
 
-// Run the test match
-runTestMatch().catch(error => {
-  console.error('Fatal error:', error instanceof Error ? error.message : 'Unknown error');
-  process.exit(1);
-}); 
+runTestMatch().catch(console.error); 
