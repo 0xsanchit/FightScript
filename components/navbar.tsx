@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { User } from "lucide-react"
+import { User, Trophy } from "lucide-react"
 import { WalletButton } from "./wallet-button"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
@@ -10,6 +10,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 const navigationItems = [
   { href: "/competitions", label: "Competitions" },
   { href: "/about", label: "About Us" },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   // Remove or update any staking-related links
 ]
 
@@ -24,7 +25,8 @@ export default function Navbar() {
         </Link>
         <nav className="flex flex-1 items-center space-x-6 text-sm font-medium">
           {navigationItems.map((item) => (
-            <Link key={item.href} href={item.href} className="transition-colors hover:text-primary">
+            <Link key={item.href} href={item.href} className="transition-colors hover:text-primary flex items-center gap-2">
+              {item.icon && <item.icon className="h-4 w-4" />}
               {item.label}
             </Link>
           ))}
@@ -36,7 +38,7 @@ export default function Navbar() {
               <span className="sr-only">Dashboard</span>
             </Button>
           </Link>
-          <Link href="https://0xmuon.github.io/co3pe-docs/" target="_blank" rel="noopener noreferrer" className="text-white">
+          <Link href="https://0xmuon.github.io/co3pe-docs/" target="_blank" rel="noopener noreferrer" className="text-black">
             Docs
           </Link>
           <WalletButton />

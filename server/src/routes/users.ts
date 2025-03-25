@@ -98,4 +98,46 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Add this route to create a test user
+router.post('/create-test', async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    await dbConnect();
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ walletAddress });
+    if (existingUser) {
+      return res.json(existingUser);
+    }
+
+    // Create new test user
+    const user = await User.create({
+      walletAddress,
+      username: `User${walletAddress.slice(0, 4)}`,
+      profileImage: '',
+      bio: 'Test user',
+      stats: {
+        totalAgents: 0,
+        competitionsWon: 0,
+        tokensEarned: 0,
+        winRate: 0
+      },
+      totalEarnings: 0
+    });
+
+    return res.json(user);
+  } catch (error: any) {
+    console.error('Failed to create test user:', error);
+    return res.status(500).json({ 
+      error: 'Failed to create test user',
+      details: error.message
+    });
+  }
+});
+
 export default router 

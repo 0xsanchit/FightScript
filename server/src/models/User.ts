@@ -3,7 +3,21 @@ import mongoose, { Schema, Document } from 'mongoose'
 export interface IUser extends Document {
   username: string;
   walletAddress: string;
+  profileImage: string;
+  bio: string;
+  role: 'user' | 'admin';
+  stats: {
+    totalAgents: number;
+    competitionsWon: number;
+    tokensEarned: number;
+    winRate: number;
+  };
+  totalEarnings: number;
   createdAt: Date;
+  competitions: mongoose.Types.ObjectId[];
+  submissions: mongoose.Types.ObjectId[];
+  agents: mongoose.Types.ObjectId[];
+  activities: mongoose.Types.ObjectId[];
 }
 
 const UserSchema = new Schema({

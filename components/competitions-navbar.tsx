@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { User, Trophy } from "lucide-react"
+import { WalletButton } from "./wallet-button"
 
 export default function CompetitionsNavbar() {
   return (
@@ -22,16 +23,16 @@ export default function CompetitionsNavbar() {
           </Link>
         </nav>
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard" target="_blank" rel="noreferrer">
+          <Link href="/dashboard">
             <Button variant="ghost" size="icon">
               <User className="h-4 w-4" />
               <span className="sr-only">Dashboard</span>
             </Button>
           </Link>
-          <Button variant="ghost" size="sm">
+          <Link href="https://0xmuon.github.io/co3pe-docs/" target="_blank" rel="noopener noreferrer" className="text-black">
             Docs
-          </Button>
-          <Button size="sm">Connect Wallet</Button>
+          </Link>
+          <WalletButton />
         </div>
       </div>
     </header>
