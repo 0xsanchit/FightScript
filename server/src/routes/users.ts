@@ -9,13 +9,18 @@ const router = express.Router()
 router.get('/', async (req, res) => {
   try {
     const { wallet } = req.query
+    console.log('Received wallet query:', wallet) // Debug log
     
     if (!wallet) {
       return res.status(400).json({ error: 'No wallet address provided' })
     }
 
+    console.log('Connecting to database...') // Debug log
     await dbConnect()
+    console.log('Database connected, searching for user...') // Debug log
+    
     const user = await User.findOne({ walletAddress: wallet }).lean()
+    console.log('User found:', user ? 'Yes' : 'No') // Debug log
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
@@ -35,16 +40,22 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { walletAddress, stats, totalEarnings, ...userData } = req.body
+    console.log('Received user data:', { walletAddress, ...userData }) // Debug log
 
+    console.log('Connecting to database...') // Debug log
     await dbConnect()
+    console.log('Database connected') // Debug log
 
     // Check if user already exists
     const existingUser = await User.findOne({ walletAddress })
+    console.log('Existing user found:', existingUser ? 'Yes' : 'No') // Debug log
+    
     if (existingUser) {
       return res.json(existingUser)
     }
 
     // Create new user with stats
+    console.log('Creating new user...') // Debug log
     const user = await User.create({
       walletAddress,
       ...userData,
@@ -53,6 +64,7 @@ router.post('/', async (req, res) => {
       role: 'user',
       createdAt: new Date()
     })
+    console.log('User created successfully') // Debug log
 
     return res.json(user)
   } catch (error: any) {

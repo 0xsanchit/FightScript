@@ -12,29 +12,45 @@ import { useWallet } from "@solana/wallet-adapter-react"
 import { UserOnboardingModal } from "./components/user-onboarding-modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export default function Home() {
   const { publicKey } = useWallet()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
+  const [isCheckingUser, setIsCheckingUser] = useState(false)
 
   useEffect(() => {
     async function checkUser() {
-      if (!publicKey) return
+      if (!publicKey || isCheckingUser) return
 
+      setIsCheckingUser(true)
       try {
+        console.log('Checking user with wallet:', publicKey.toString())
         const response = await fetch(`/api/users?wallet=${publicKey.toString()}`)
+        console.log('User check response status:', response.status)
         if (response.status === 404) {
+          console.log('New user detected, showing onboarding modal')
           setIsNewUser(true)
           setShowOnboarding(true)
         }
       } catch (error) {
         console.error('Error checking user:', error)
+        toast.error("Failed to check user status")
+      } finally {
+        setIsCheckingUser(false)
       }
     }
 
     checkUser()
-  }, [publicKey])
+  }, [publicKey, isCheckingUser])
+
+  // Show onboarding modal immediately for new users
+  useEffect(() => {
+    if (isNewUser && !showOnboarding) {
+      setShowOnboarding(true)
+    }
+  }, [isNewUser, showOnboarding])
 
   return (
     <div className="relative min-h-screen">

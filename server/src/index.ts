@@ -10,6 +10,7 @@ import competitionsRouter from './routes/competitions';
 import usersRouter from './routes/users';
 import statsRouter from './routes/stats';
 import uploadRouter from './routes/upload';
+import chessRouter from './routes/chess';
 
 // Load environment variables
 dotenv.config();
@@ -36,6 +37,7 @@ app.use('/api/competitions', competitionsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/chess', chessRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

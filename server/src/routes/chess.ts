@@ -5,9 +5,19 @@ import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
 import Agent from '../models/Agent';
+import { spawn } from 'child_process';
 
 const router = express.Router();
 const engine = new ChessEngine();
+
+// Create a Map to store active matches
+const matches: Map<string, {
+  status: string;
+  message: string;
+  engineProcess?: any;
+  moves: string[];
+  winner?: string;
+}> = new Map();
 
 // Configure Google Drive
 const auth = new google.auth.GoogleAuth({
@@ -37,6 +47,11 @@ const upload = multer({
     fileSize: 1024 * 1024 // 1MB limit
   }
 });
+
+// Add path to Stockfish executable - adjust this path based on your system
+const STOCKFISH_PATH = process.platform === 'win32' 
+  ? path.join(process.cwd(), 'src/engine/stockfish/stockfish.exe')  // Windows
+  : path.join(process.cwd(), 'src/engine/stockfish/stockfish');     // Linux/Mac
 
 // Get engine status
 router.get('/status', async (req, res) => {
@@ -122,45 +137,142 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
-// Start a match
+// POST /api/chess/match
 router.post('/match', async (req, res) => {
   try {
-    const { agent1Id, agent2Id } = req.body;
+    const { fileId, opponent } = req.body;
 
-    // Get agents from Google Drive
-    const agent1Path = await downloadAgent(agent1Id);
-    const agent2Path = await downloadAgent(agent2Id);
+    // 1. Download the agent file from Google Drive
+    const dest = path.join(process.cwd(), 'uploads', 'temp', `${fileId}.cpp`);
+    await downloadFromDrive(fileId, dest);
 
-    // Run the match
-    const result = await engine.runMatch(agent1Path, agent2Path);
+    // 2. Get the aggressive bot path
+    const aggressiveBotPath = path.join(process.cwd(), 'src/engine/agents/aggressive_bot.cpp');
 
-    // Update rankings in database
-    // ... implement database logic here ...
+    // 3. Generate match ID
+    const matchId = Date.now().toString();
 
-    res.json(result);
+    // 4. Store initial match state
+    matches.set(matchId, {
+      status: 'compiling',
+      message: 'Compiling agents...',
+      moves: [],
+    });
+
+    try {
+      // 5. Check if Stockfish exists
+      if (!fs.existsSync(STOCKFISH_PATH)) {
+        throw new Error('Stockfish executable not found. Please ensure it is installed correctly.');
+      }
+
+      // 6. Start the match process
+      const engineProcess = spawn(STOCKFISH_PATH, [dest, aggressiveBotPath], {
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      matches.get(matchId)!.engineProcess = engineProcess;
+      matches.get(matchId)!.status = 'running';
+      matches.get(matchId)!.message = 'Match in progress';
+
+      // Handle engine output
+      engineProcess.stdout.on('data', (data: Buffer) => {
+        const output = data.toString();
+        console.log('Engine output:', output);
+        
+        const currentMatch = matches.get(matchId);
+        if (currentMatch) {
+          currentMatch.moves.push(output);
+        }
+      });
+
+      // Handle engine errors
+      engineProcess.stderr.on('data', (data: Buffer) => {
+        console.error('Engine error:', data.toString());
+      });
+
+      // Handle engine completion
+      engineProcess.on('close', (code: number) => {
+        const currentMatch = matches.get(matchId);
+        if (currentMatch) {
+          currentMatch.status = code === 0 ? 'completed' : 'error';
+          currentMatch.message = code === 0 
+            ? 'Match completed successfully' 
+            : `Match failed with code ${code}`;
+        }
+      });
+
+      // Return match ID for status polling
+      res.json({ 
+        matchId,
+        status: 'started',
+        message: 'Match started successfully' 
+      });
+
+    } catch (error) {
+      matches.set(matchId, {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to start match',
+        moves: []
+      });
+      throw error;
+    }
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to run match' });
+    console.error('Failed to start match:', error);
+    res.status(500).json({ 
+      error: 'Failed to start match',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
-async function downloadAgent(fileId: string): Promise<string> {
-  const tempPath = path.join(__dirname, '../../uploads/temp', `${fileId}.cpp`);
-  
-  const dest = fs.createWriteStream(tempPath);
-  const response = await drive.files.get(
-    { fileId, alt: 'media' },
-    { responseType: 'stream' }
-  );
-  
-  await new Promise((resolve, reject) => {
-    response.data
-      .on('end', resolve)
-      .on('error', reject)
-      .pipe(dest);
-  });
+// Helper function to download file from Google Drive
+async function downloadFromDrive(fileId: string, dest: string) {
+  try {
+    const response = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    );
 
-  return tempPath;
+    await new Promise<void>((resolve, reject) => {
+      const dest_stream = fs.createWriteStream(dest);
+      response.data
+        .pipe(dest_stream)
+        .on('finish', () => resolve())
+        .on('error', (error) => reject(error));
+    });
+  } catch (error) {
+    throw new Error(`Failed to download file from Drive: ${error}`);
+  }
 }
+
+// GET /api/chess/match/:id/status
+router.get('/match/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const match = matches.get(id);
+
+    if (!match) {
+      return res.status(404).json({ 
+        error: 'Match not found' 
+      });
+    }
+
+    res.json({
+      status: match.status,
+      message: match.message,
+      winner: match.winner,
+      moves: match.moves
+    });
+
+  } catch (error) {
+    console.error('Failed to get match status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get match status',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 // Get user's agents
 router.get('/agents/:wallet', async (req, res) => {
@@ -178,5 +290,17 @@ router.get('/agents/:wallet', async (req, res) => {
     });
   }
 });
+
+// Clean up completed matches periodically
+setInterval(() => {
+  for (const [id, match] of matches.entries()) {
+    if (match.status === 'completed' || match.status === 'error') {
+      // Keep matches for 1 hour before cleaning up
+      setTimeout(() => {
+        matches.delete(id);
+      }, 3600000); // 1 hour
+    }
+  }
+}, 300000); // Check every 5 minutes
 
 export default router; 

@@ -35,4 +35,55 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.post('/', async (req, res) => {
+  try {
+    const { name, fileId, walletAddress } = req.body;
+
+    // Find the user by wallet address
+    const user = await User.findOne({ walletAddress });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create new agent with user reference
+    const agent = await Agent.create({
+      name,
+      fileId,
+      walletAddress,
+      userId: user._id, // Link agent to user
+    });
+
+    // Update user's stats
+    await User.findByIdAndUpdate(user._id, {
+      $inc: { 'stats.totalAgents': 1 }
+    });
+
+    return res.json(agent);
+  } catch (error) {
+    console.error('Failed to create agent:', error);
+    return res.status(500).json({ 
+      error: 'Failed to create agent',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.get('/user/:walletAddress', async (req, res) => {
+  try {
+    const { walletAddress } = req.params;
+    
+    // Find user's agents
+    const agents = await Agent.find({ walletAddress })
+      .sort({ createdAt: -1 }); // Most recent first
+    
+    return res.json(agents);
+  } catch (error) {
+    console.error('Failed to fetch user agents:', error);
+    return res.status(500).json({ 
+      error: 'Failed to fetch agents',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router; // Ensure this line is present

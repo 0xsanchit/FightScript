@@ -8,6 +8,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/chess/:path*',
+        destination: 'http://localhost:5000/api/chess/:path*',
+      },
+      {
         source: '/api/:path*',
         destination: 'http://localhost:5000/api/:path*',
       },

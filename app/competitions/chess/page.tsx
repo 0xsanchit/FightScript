@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { startMatch, fetchUserStats } from '../../lib/api'
+import { LoadingState } from "@/components/ui/loading-state"
 
 const leaderboardData = [
   { rank: 1, name: "AlphaChess", wins: 150, losses: 20 },
@@ -52,14 +53,29 @@ interface UploadState {
   success: boolean;
 }
 
+interface User {
+  username: string;
+  walletAddress: string;
+}
+
+interface MatchStatus {
+  status: 'idle' | 'compiling' | 'running' | 'completed' | 'error';
+  message: string;
+  winner?: string;
+}
+
 export default function ChessCompetition() {
   const { publicKey } = useWallet();
-  const [username, setUsername] = useState<string>('');
-  const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [engineStatus, setEngineStatus] = useState("Loading engine status...");
   const [userAgent, setUserAgent] = useState<Agent | null>(null);
   const [leaderboard, setLeaderboard] = useState<Agent[]>([]);
-  const [selectedOpponent, setSelectedOpponent] = useState<string>('');
-  const [matchStatus, setMatchStatus] = useState<string>('');
+  const [selectedOpponent, setSelectedOpponent] = useState<string>("");
+  const [matchStatus, setMatchStatus] = useState<MatchStatus>({
+    status: 'idle',
+    message: 'Waiting for agent upload...'
+  });
   const [uploadState, setUploadState] = useState<UploadState>({
     file: null,
     uploading: false,
@@ -68,33 +84,31 @@ export default function ChessCompetition() {
   });
 
   useEffect(() => {
-    fetchEngineStatus();
+    fetchUser();
     if (publicKey) {
       fetchUserAgent();
       fetchLeaderboard();
-      fetchUsername();
     }
   }, [publicKey]);
 
-  const fetchUsername = async () => {
-    if (!publicKey) return;
-    try {
-      const response = await fetch(`/api/user/${publicKey.toString()}`);
-      const data = await response.json();
-      setUsername(data.username || 'Anonymous');
-    } catch (error) {
-      console.error('Failed to fetch username:', error);
-      setUsername('Anonymous');
+  const fetchUser = async () => {
+    if (!publicKey) {
+      setUser(null);
+      setIsLoading(false);
+      return;
     }
-  };
 
-  const fetchEngineStatus = async () => {
     try {
-      const response = await fetch('/api/chess/status');
-      const data = await response.json();
-      setEngineStatus(data);
+      const response = await fetch(`/api/users?wallet=${publicKey.toString()}`);
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
     } catch (error) {
-      console.error('Failed to fetch engine status:', error);
+      console.error('Error fetching user:', error);
+      toast.error('Failed to fetch user data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -151,6 +165,7 @@ export default function ChessCompetition() {
     }
 
     setUploadState(prev => ({ ...prev, uploading: true, error: null }));
+    setEngineStatus('Uploading agent file...');
 
     try {
       const formData = new FormData();
@@ -159,18 +174,40 @@ export default function ChessCompetition() {
 
       console.log('Uploading file:', uploadState.file.name);
 
-      const response = await fetch('/api/upload/agent', {
+      const uploadResponse = await fetch('/api/upload/agent', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      const uploadData = await uploadResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.details || data.error || 'Upload failed');
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.details || uploadData.error || 'Upload failed');
       }
 
-      console.log('Upload successful:', data);
+      console.log('Upload successful:', uploadData);
+
+      setEngineStatus('Agent file uploaded. Starting compilation...');
+
+      const matchResponse = await fetch('/api/chess/match', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileId: uploadData.fileId,
+          opponent: 'aggressive_bot'
+        }),
+      });
+
+      if (!matchResponse.ok) {
+        throw new Error('Failed to start match');
+      }
+
+      const matchData = await matchResponse.json();
+      
+      setEngineStatus('Match started. Waiting for results...');
+      pollMatchStatus(matchData.matchId);
 
       setUploadState(prev => ({ 
         ...prev, 
@@ -178,26 +215,61 @@ export default function ChessCompetition() {
         error: null,
         file: null 
       }));
-      fetchUserAgent();
+
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Error:', error);
       setUploadState(prev => ({ 
         ...prev, 
-        error: error.message || 'Failed to upload file. Please try again.' 
+        error: error.message || 'Failed to process agent. Please try again.' 
       }));
+      setEngineStatus('Error occurred while processing agent');
     } finally {
       setUploadState(prev => ({ ...prev, uploading: false }));
     }
   };
 
+  const pollMatchStatus = async (matchId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/chess/match/${matchId}/status`);
+      const data = await response.json();
+
+        setMatchStatus({
+          status: data.status,
+          message: data.message,
+          winner: data.winner
+        });
+
+        setEngineStatus(data.message);
+
+        if (data.status === 'completed' || data.status === 'error') {
+          clearInterval(pollInterval);
+          fetchUserAgent();
+          fetchLeaderboard();
+        }
+      } catch (error) {
+        console.error('Error polling match status:', error);
+        clearInterval(pollInterval);
+        setEngineStatus('Error checking match status');
+      }
+    }, 2000);
+  };
+
   const startMatch = async () => {
     if (!userAgent || !selectedOpponent) {
-      setMatchStatus('Please select an opponent');
+      setMatchStatus({
+        status: 'error',
+        message: 'Please select an opponent'
+      });
       return;
     }
 
     try {
-      setMatchStatus('Match in progress...');
+      setMatchStatus({
+        status: 'compiling',
+        message: 'Match in progress...',
+        winner: undefined
+      });
       const response = await fetch('/api/chess/match', {
         method: 'POST',
         headers: {
@@ -210,11 +282,18 @@ export default function ChessCompetition() {
       });
 
       const result = await response.json();
-      setMatchStatus(`Match completed! ${result.reason}`);
+      setMatchStatus({
+        status: 'completed',
+        message: `Match completed! ${result.reason}`,
+        winner: result.winner.toString()
+      });
       fetchLeaderboard();
       fetchUserAgent();
     } catch (error) {
-      setMatchStatus('Failed to start match');
+      setMatchStatus({
+        status: 'error',
+        message: 'Failed to start match'
+      });
     }
   };
 
@@ -224,14 +303,17 @@ export default function ChessCompetition() {
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Chess AI Arena</h1>
-          {publicKey && (
-            <div className="flex items-center space-x-2 bg-white rounded-lg shadow px-4 py-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                {username.charAt(0).toUpperCase()}
-              </div>
-              <span className="font-medium">{username}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-lg">
+              {isLoading ? (
+                <LoadingState />
+              ) : user ? (
+                user.username
+              ) : (
+                "Anonymous"
+              )}
+            </span>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
@@ -326,29 +408,36 @@ export default function ChessCompetition() {
         </div>
 
         
-        {/* Engine Status */}
+        {/* Engine Status with more detail */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">Chess Engine Status</h2>
-          {engineStatus ? (
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-gray-600">Version</p>
-                <p className="font-semibold">{engineStatus.version}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Status</p>
-                <p className={`font-semibold ${engineStatus.ready ? 'text-green-600' : 'text-red-600'}`}>
-                  {engineStatus.ready ? 'Ready' : 'Initializing'}
+          <div className="space-y-4">
+            <p className="text-lg">{engineStatus}</p>
+            {matchStatus.status !== 'idle' && (
+              <div className={`p-4 rounded-md ${
+                matchStatus.status === 'completed' 
+                  ? 'bg-green-50' 
+                  : matchStatus.status === 'error'
+                  ? 'bg-red-50'
+                  : 'bg-blue-50'
+              }`}>
+                <p className={`text-sm ${
+                  matchStatus.status === 'completed'
+                    ? 'text-green-700'
+                    : matchStatus.status === 'error'
+                    ? 'text-red-700'
+                    : 'text-blue-700'
+                }`}>
+                  {matchStatus.message}
                 </p>
+                {matchStatus.winner && (
+                  <p className="text-sm font-medium mt-2">
+                    Winner: {matchStatus.winner}
+                  </p>
+                )}
               </div>
-              <div>
-                <p className="text-gray-600">CPU Cores</p>
-                <p className="font-semibold">{engineStatus.cores}</p>
-              </div>
-            </div>
-          ) : (
-            <p>Loading engine status...</p>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Agent Selection */}
@@ -394,9 +483,9 @@ export default function ChessCompetition() {
           >
             Start Match
           </button>
-          {matchStatus && (
+          {matchStatus.status !== 'idle' && (
             <div className="mt-4 p-4 rounded-md bg-blue-50">
-              <p className="text-sm text-blue-700">{matchStatus}</p>
+              <p className="text-sm text-blue-700">{matchStatus.message}</p>
             </div>
           )}
         </div>

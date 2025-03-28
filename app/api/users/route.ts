@@ -1,22 +1,33 @@
 import { NextResponse } from 'next/server'
-import { proxyRequest } from '@/lib/api'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 export async function GET(request: Request) {
   try {
-    // Get wallet from query parameter instead of cookie
     const { searchParams } = new URL(request.url)
     const wallet = searchParams.get('wallet')
+    
+    console.log('Proxying GET request to Express server:', `${API_BASE_URL}/users?wallet=${wallet}`)
     
     if (!wallet) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    const data = await proxyRequest(`/users?wallet=${wallet}`)
+    const response = await fetch(`${API_BASE_URL}/users?wallet=${wallet}`)
+    const data = await response.json()
+    
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status })
+    }
+    
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Failed to fetch user:', error)
+    console.error('Failed to proxy request to Express server:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch user' },
+      { 
+        error: error instanceof Error ? error.message : 'Failed to fetch user',
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }
@@ -25,15 +36,30 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const data = await proxyRequest('/users', {
+    console.log('Proxying POST request to Express server:', `${API_BASE_URL}/users`)
+    
+    const response = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(body),
     })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status })
+    }
+    
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Failed to create user:', error)
+    console.error('Failed to proxy request to Express server:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create user' },
+      { 
+        error: error instanceof Error ? error.message : 'Failed to create user',
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

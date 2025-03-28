@@ -22,25 +22,31 @@ export function UserOnboardingModal({ isOpen, onClose }: UserOnboardingModalProp
     profileImage: "", // Default empty string as per model
   })
 
+  console.log('UserOnboardingModal rendered:', { isOpen, hasPublicKey: !!publicKey })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!publicKey) {
+      console.log('No public key found')
       toast.error("Please connect your wallet first")
       return
     }
 
     if (!formData.username.trim()) {
+      console.log('Username is empty')
       toast.error("Username is required")
       return
     }
 
     if (!formData.bio.trim()) {
+      console.log('Bio is empty')
       toast.error("Bio is required")
       return
     }
 
     setIsLoading(true)
     try {
+      console.log('Submitting user data:', { ...formData, walletAddress: publicKey.toString() })
       const response = await fetch("/api/users", {
         method: "POST",
         headers: {
@@ -62,11 +68,14 @@ export function UserOnboardingModal({ isOpen, onClose }: UserOnboardingModalProp
         }),
       })
 
+      console.log('User creation response status:', response.status)
       if (!response.ok) {
         const error = await response.json()
+        console.error('User creation error:', error)
         throw new Error(error.message || "Failed to create user")
       }
 
+      console.log('User created successfully')
       toast.success("Profile created successfully!")
       onClose()
     } catch (error) {
