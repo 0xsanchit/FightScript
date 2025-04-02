@@ -35,6 +35,8 @@ interface Agent {
   owner: string;
   wins: number;
   losses: number;
+  draws: number;
+  points: number;
   rank: number;
 }
 
@@ -61,8 +63,49 @@ interface User {
 interface MatchStatus {
   status: 'idle' | 'compiling' | 'running' | 'completed' | 'error';
   message: string;
-  winner?: string;
+  winner?: 'user' | 'bot' | 'draw';
+  moves?: string[];
 }
+
+const MatchResultDisplay = ({ status, winner, moves }: MatchStatus) => {
+  if (status !== 'completed') return null;
+
+  return (
+    <div className="mt-4 p-4 bg-card rounded-lg border">
+      <h3 className="text-lg font-semibold mb-2">Match Result</h3>
+      {winner === 'user' && (
+        <div className="text-green-500">
+          <p className="text-xl font-bold">🎉 You Won!</p>
+          <p>Your agent defeated the aggressive bot.</p>
+        </div>
+      )}
+      {winner === 'bot' && (
+        <div className="text-red-500">
+          <p className="text-xl font-bold">😢 Bot Won</p>
+          <p>The aggressive bot defeated your agent.</p>
+        </div>
+      )}
+      {winner === 'draw' && (
+        <div className="text-yellow-500">
+          <p className="text-xl font-bold">🤝 Draw</p>
+          <p>The match ended in a draw.</p>
+        </div>
+      )}
+      {moves && moves.length > 0 && (
+        <div className="mt-4">
+          <h4 className="font-semibold mb-2">Move History:</h4>
+          <div className="grid grid-cols-5 gap-2">
+            {moves.map((move, index) => (
+              <span key={index} className="bg-muted p-1 rounded text-sm">
+                {move}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ChessCompetition() {
   const { publicKey } = useWallet();
@@ -155,17 +198,20 @@ export default function ChessCompetition() {
 
   const handleUpload = async () => {
     if (!publicKey) {
-      setUploadState(prev => ({ ...prev, error: 'Please connect your wallet' }));
+      toast.error('Please connect your wallet');
       return;
     }
 
     if (!uploadState.file) {
-      setUploadState(prev => ({ ...prev, error: 'Please select a file' }));
+      toast.error('Please select a file');
       return;
     }
 
     setUploadState(prev => ({ ...prev, uploading: true, error: null }));
-    setEngineStatus('Uploading agent file...');
+    setMatchStatus({
+      status: 'compiling',
+      message: 'Uploading and compiling your agent...'
+    });
 
     try {
       const formData = new FormData();
@@ -182,12 +228,15 @@ export default function ChessCompetition() {
       const uploadData = await uploadResponse.json();
 
       if (!uploadResponse.ok) {
-        throw new Error(uploadData.details || uploadData.error || 'Upload failed');
+        throw new Error(uploadData.message || uploadData.error || 'Upload failed');
       }
 
       console.log('Upload successful:', uploadData);
 
-      setEngineStatus('Agent file uploaded. Starting compilation...');
+      setMatchStatus({
+        status: 'running',
+        message: 'Starting match against aggressive bot...'
+      });
 
       const matchResponse = await fetch('/api/chess/match', {
         method: 'POST',
@@ -200,13 +249,17 @@ export default function ChessCompetition() {
         }),
       });
 
+      const matchData = await matchResponse.json();
+
       if (!matchResponse.ok) {
-        throw new Error('Failed to start match');
+        throw new Error(matchData.message || 'Failed to start match');
       }
 
-      const matchData = await matchResponse.json();
+      setMatchStatus({
+        status: 'running',
+        message: 'Match in progress...'
+      });
       
-      setEngineStatus('Match started. Waiting for results...');
       pollMatchStatus(matchData.matchId);
 
       setUploadState(prev => ({ 
@@ -216,13 +269,18 @@ export default function ChessCompetition() {
         file: null 
       }));
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process agent';
       setUploadState(prev => ({ 
         ...prev, 
-        error: error.message || 'Failed to process agent. Please try again.' 
+        error: errorMessage
       }));
-      setEngineStatus('Error occurred while processing agent');
+      setMatchStatus({
+        status: 'error',
+        message: errorMessage
+      });
+      toast.error(errorMessage);
     } finally {
       setUploadState(prev => ({ ...prev, uploading: false }));
     }
@@ -232,27 +290,58 @@ export default function ChessCompetition() {
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(`/api/chess/match/${matchId}/status`);
-      const data = await response.json();
+        const data = await response.json();
+
+        // Log the response for debugging
+        console.log('Match status response:', data);
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch match status');
+        }
 
         setMatchStatus({
           status: data.status,
           message: data.message,
-          winner: data.winner
+          winner: data.winner,
+          moves: data.moves
         });
-
-        setEngineStatus(data.message);
 
         if (data.status === 'completed' || data.status === 'error') {
           clearInterval(pollInterval);
           fetchUserAgent();
           fetchLeaderboard();
+          
+          if (data.status === 'completed') {
+            if (data.winner === 'user') {
+              toast.success('Congratulations! Your agent won the match!');
+            } else if (data.winner === 'bot') {
+              toast.error('The aggressive bot won the match.');
+            } else {
+              toast('The match ended in a draw.', {
+                style: {
+                  background: '#fef3c7',
+                  color: '#92400e',
+                  border: '1px solid #fbbf24'
+                }
+              });
+            }
+          } else if (data.status === 'error') {
+            toast.error(data.message || 'An error occurred during the match');
+          }
         }
       } catch (error) {
         console.error('Error polling match status:', error);
         clearInterval(pollInterval);
-        setEngineStatus('Error checking match status');
+        setMatchStatus({
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Error checking match status'
+        });
+        toast.error('Failed to check match status');
       }
     }, 2000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(pollInterval);
   };
 
   const startMatch = async () => {
@@ -410,33 +499,44 @@ export default function ChessCompetition() {
         
         {/* Engine Status with more detail */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Chess Engine Status</h2>
+          <h2 className="text-2xl font-bold mb-4">Match Status</h2>
           <div className="space-y-4">
-            <p className="text-lg">{engineStatus}</p>
-            {matchStatus.status !== 'idle' && (
-              <div className={`p-4 rounded-md ${
-                matchStatus.status === 'completed' 
-                  ? 'bg-green-50' 
-                  : matchStatus.status === 'error'
-                  ? 'bg-red-50'
-                  : 'bg-blue-50'
-              }`}>
-                <p className={`text-sm ${
+            <div className={`p-4 rounded-md ${
+              matchStatus.status === 'completed' 
+                ? 'bg-green-50 border border-green-200' 
+                : matchStatus.status === 'error'
+                ? 'bg-red-50 border border-red-200'
+                : matchStatus.status === 'running'
+                ? 'bg-blue-50 border border-blue-200'
+                : matchStatus.status === 'compiling'
+                ? 'bg-yellow-50 border border-yellow-200'
+                : 'bg-gray-50 border border-gray-200'
+            }`}>
+              <div className="flex items-center">
+                {matchStatus.status === 'running' && (
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                <p className={`text-sm font-medium ${
                   matchStatus.status === 'completed'
-                    ? 'text-green-700'
+                    ? 'text-green-800'
                     : matchStatus.status === 'error'
-                    ? 'text-red-700'
-                    : 'text-blue-700'
+                    ? 'text-red-800'
+                    : matchStatus.status === 'running'
+                    ? 'text-blue-800'
+                    : matchStatus.status === 'compiling'
+                    ? 'text-yellow-800'
+                    : 'text-gray-800'
                 }`}>
                   {matchStatus.message}
                 </p>
-                {matchStatus.winner && (
-                  <p className="text-sm font-medium mt-2">
-                    Winner: {matchStatus.winner}
-                  </p>
-                )}
               </div>
-            )}
+            </div>
+
+            {/* Match Result Display */}
+            <MatchResultDisplay {...matchStatus} />
           </div>
         </div>
 
@@ -500,7 +600,9 @@ export default function ChessCompetition() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wins</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Draws</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Losses</th>
                 </tr>
               </thead>
@@ -510,8 +612,10 @@ export default function ChessCompetition() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agent.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agent.owner}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agent.wins}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agent.losses}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{agent.points}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">{agent.wins}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">{agent.draws}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">{agent.losses}</td>
                   </tr>
                 ))}
               </tbody>

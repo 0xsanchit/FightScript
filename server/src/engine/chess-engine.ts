@@ -17,103 +17,126 @@ interface GameState {
 }
 
 export class ChessEngine {
-  private stockfish: ChildProcess | null = null
+  private process: ChildProcess | null = null
   private drive: any
   private isReady: boolean = false
-  private enginePath: string
+  private readonly enginePath: string
 
   constructor() {
-    try {
-      // Register ts-node to handle TypeScript files
-      register()
-      
-      // Update path with correct Stockfish executable name
-      this.enginePath = path.join(
-        process.cwd(),
-        'src',
-        'engine',
-        'stockfish',
-        'stockfish-windows-x86-64-avx2.exe'
-      )
-
-      // Check if engine exists
-      if (!fs.existsSync(this.enginePath)) {
-        // Create directory if it doesn't exist
-        const engineDir = path.dirname(this.enginePath)
-        if (!fs.existsSync(engineDir)) {
-          fs.mkdirSync(engineDir, { recursive: true })
-        }
-        throw new Error(`Stockfish engine not found at: ${this.enginePath}`)
-      }
-
-      // Initialize Stockfish
-      this.initializeEngine()
-    } catch (error) {
-      console.error('Failed to initialize chess engine:', error)
-      throw error
-    }
+    // Update the Stockfish path to use the correct filename
+    this.enginePath = process.platform === 'win32'
+      ? path.join(process.cwd(), 'src/engine/stockfish/stockfish-windows-x86-64-avx2.exe')
+      : path.join(process.cwd(), 'src/engine/stockfish/stockfish')
   }
 
-  private initializeEngine(): void {
-    try {
-      this.stockfish = spawn(this.enginePath)
-      
-      if (!this.stockfish?.stdin || !this.stockfish?.stdout) {
-        throw new Error('Failed to spawn chess engine process')
-      }
-
-      this.stockfish.on('error', (error: Error) => {
-        console.error('Chess engine error:', error)
-        this.cleanup()
-      })
-
-      this.stockfish.on('exit', (code: number) => {
-        console.log(`Chess engine exited with code ${code}`)
-      })
-
-      // Initialize UCI mode
-      this.stockfish.stdin.write('uci\n')
-      this.stockfish.stdin.write('setoption name MultiPV value 1\n')
-      this.stockfish.stdin.write('isready\n')
-
-      // Wait for engine to be ready
-      this.waitForReady()
-    } catch (error) {
-      console.error('Failed to initialize engine:', error)
-      throw error
-    }
-  }
-
-  private checkStockfish(): void {
-    if (!this.stockfish?.stdin || !this.stockfish?.stdout) {
-      throw new Error('Chess engine not properly initialized');
-    }
-  }
-
-  private waitForReady(): Promise<void> {
-    this.checkStockfish();
-    
+  async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Engine initialization timeout'));
-      }, 5000);
+      // Check if engine is already initialized
+      if (this.isReady && this.process) {
+        console.log('Engine already initialized');
+        resolve();
+        return;
+      }
 
-      const handler = (data: Buffer) => {
-        if (data.toString().includes('readyok')) {
-          this.isReady = true;
-          clearTimeout(timeout);
-          this.stockfish!.stdout!.removeListener('data', handler);
-          resolve();
-        }
-      };
+      // Check if Stockfish exists
+      if (!fs.existsSync(this.enginePath)) {
+        console.error(`Stockfish not found at path: ${this.enginePath}`);
+        reject(new Error(`Stockfish not found at path: ${this.enginePath}`));
+        return;
+      }
 
       try {
-        this.stockfish!.stdout!.on('data', handler);
+        console.log('Starting Stockfish engine from:', this.enginePath);
+        
+        // Spawn the Stockfish process
+        this.process = spawn(this.enginePath, [], {
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        // Handle process errors
+        this.process.on('error', (error) => {
+          console.error('Stockfish process error:', error);
+          this.isReady = false;
+          reject(error);
+        });
+
+        // Handle unexpected exit
+        this.process.on('exit', (code) => {
+          this.isReady = false;
+          if (code !== 0) {
+            console.error(`Stockfish process exited with code ${code}`);
+            reject(new Error(`Stockfish process exited with code ${code}`));
+          }
+        });
+
+        let initOutput = '';
+        // Listen for "uciok" response
+        this.process.stdout?.on('data', (data: Buffer) => {
+          const output = data.toString();
+          initOutput += output;
+          console.log('Stockfish output:', output);
+          
+          if (output.includes('uciok')) {
+            console.log('Stockfish engine initialized successfully');
+            this.isReady = true;
+            resolve();
+          }
+        });
+
+        // Send UCI initialization command
+        console.log('Sending UCI initialization commands...');
+        this.sendCommand('uci');
+        this.sendCommand('isready');
+
+        // Set initialization timeout
+        setTimeout(() => {
+          if (!this.isReady) {
+            console.error('Engine initialization timeout. Last output:', initOutput);
+            this.process?.kill();
+            this.isReady = false;
+            reject(new Error('Engine initialization timeout - ensure Stockfish is properly installed'));
+          }
+        }, 10000); // Increased timeout to 10 seconds
+
       } catch (error) {
-        clearTimeout(timeout);
+        console.error('Failed to initialize chess engine:', error);
+        this.isReady = false;
         reject(error);
       }
     });
+  }
+
+  private sendCommand(command: string): void {
+    if (!this.process?.stdin?.write(`${command}\n`)) {
+      throw new Error('Failed to send command to engine')
+    }
+  }
+
+  private async loadAgent(agentPath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!fs.existsSync(agentPath)) {
+        reject(new Error(`Agent not found at path: ${agentPath}`))
+        return
+      }
+
+      // Add timeout for agent loading
+      const timeout = setTimeout(() => {
+        reject(new Error('Agent loading timeout'))
+      }, 3000)
+
+      // Load agent logic here
+      // This will depend on how your agents are implemented
+      resolve()
+      clearTimeout(timeout)
+    })
+  }
+
+  cleanup(): void {
+    if (this.process) {
+      this.process.kill()
+      this.process = null
+      this.isReady = false
+    }
   }
 
   async getEngineInfo(): Promise<{ version: string; ready: boolean; cores: number }> {
@@ -138,17 +161,17 @@ export class ChessEngine {
         // Check if engine is ready
         if (output.includes('readyok')) {
           ready = true
-          this.stockfish?.stdout?.removeListener('data', handler)
+          this.process?.stdout?.removeListener('data', handler)
           resolve({ version, ready, cores })
         }
       }
 
-      this.stockfish?.stdout?.on('data', handler)
+      this.process?.stdout?.on('data', handler)
       
       // Send commands to get info
-      this.stockfish?.stdin?.write('uci\n')
-      this.stockfish?.stdin?.write('setoption name Threads value 4\n')
-      this.stockfish?.stdin?.write('isready\n')
+      this.process?.stdin?.write('uci\n')
+      this.process?.stdin?.write('setoption name Threads value 4\n')
+      this.process?.stdin?.write('isready\n')
     })
   }
 
@@ -158,7 +181,9 @@ export class ChessEngine {
     reason: string;
     bestMove?: string;
   }> {
-    this.checkStockfish();
+    if (!this.process?.stdin || !this.process?.stdout) {
+      throw new Error('Chess engine not properly initialized');
+    }
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -183,7 +208,7 @@ export class ChessEngine {
           reason = 'Stalemate';
         } else if (output.includes('bestmove')) {
           clearTimeout(timeout);
-          this.stockfish!.stdout!.removeListener('data', handler);
+          this.process!.stdout!.removeListener('data', handler);
           bestMove = output.split('bestmove ')[1].split(' ')[0];
           resolve({
             isGameOver,
@@ -195,9 +220,9 @@ export class ChessEngine {
       };
 
       try {
-        this.stockfish!.stdout!.on('data', handler);
-        this.stockfish!.stdin!.write(`position fen ${fen}\n`);
-        this.stockfish!.stdin!.write(`go movetime ${timeLimit}\n`);
+        this.process!.stdout!.on('data', handler);
+        this.process!.stdin!.write(`position fen ${fen}\n`);
+        this.process!.stdin!.write(`go movetime ${timeLimit}\n`);
       } catch (error) {
         clearTimeout(timeout);
         reject(error);
@@ -235,13 +260,62 @@ export class ChessEngine {
     reason: string;
     moves: string[];
   }> {
+    console.log('Starting match between:', bot1Path, 'and', bot2Path);
+    
     let bot1: any = null;
-    let bot2: any = null;  // Declare bots at function scope
+    let bot2: any = null;
 
     try {
+      // Ensure the uploads directory exists
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'agents');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      // Get absolute paths for the bots
+      const bot1AbsolutePath = path.isAbsolute(bot1Path) ? bot1Path : path.join(process.cwd(), bot1Path);
+      const bot2AbsolutePath = path.isAbsolute(bot2Path) ? bot2Path : path.join(process.cwd(), bot2Path);
+
+      console.log('Bot paths:', {
+        bot1: bot1AbsolutePath,
+        bot2: bot2AbsolutePath
+      });
+
+      // Verify files exist before compilation
+      if (!fs.existsSync(bot1AbsolutePath)) {
+        throw new Error(`Bot 1 file not found at path: ${bot1AbsolutePath}`);
+      }
+      if (!fs.existsSync(bot2AbsolutePath)) {
+        throw new Error(`Bot 2 file not found at path: ${bot2AbsolutePath}`);
+      }
+
+      // Compile bots if they're C++ files
+      let bot1Executable = bot1AbsolutePath;
+      let bot2Executable = bot2AbsolutePath;
+
+      if (bot1AbsolutePath.endsWith('.cpp')) {
+        console.log('Compiling Bot 1...');
+        bot1Executable = await this.compileCppBot(bot1AbsolutePath);
+        console.log('Bot 1 compiled successfully to:', bot1Executable);
+      }
+
+      if (bot2AbsolutePath.endsWith('.cpp')) {
+        console.log('Compiling Bot 2...');
+        bot2Executable = await this.compileCppBot(bot2AbsolutePath);
+        console.log('Bot 2 compiled successfully to:', bot2Executable);
+      }
+
+      // Verify executables exist
+      if (!fs.existsSync(bot1Executable)) {
+        throw new Error(`Bot 1 executable not found at path: ${bot1Executable}`);
+      }
+      if (!fs.existsSync(bot2Executable)) {
+        throw new Error(`Bot 2 executable not found at path: ${bot2Executable}`);
+      }
+
       console.log('Starting bots...');
-      bot1 = spawn(bot1Path, [], { stdio: ['pipe', 'pipe', 'pipe'] });
-      bot2 = spawn(bot2Path, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+      bot1 = spawn(bot1Executable, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+      bot2 = spawn(bot2Executable, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 
       // Initialize UCI mode for both bots
       console.log('Initializing bots...');
@@ -256,10 +330,12 @@ export class ChessEngine {
       let moveCount = 0;
 
       // Wait for both bots to be ready
+      console.log('Waiting for bots to be ready...');
       await Promise.all([
         this.waitForBotReady(bot1, "Bot 1"),
         this.waitForBotReady(bot2, "Bot 2")
       ]);
+      console.log('Both bots are ready!');
 
       while (moveCount < 50) {
         const currentBot = currentPlayer === 1 ? bot1 : bot2;
@@ -290,8 +366,8 @@ export class ChessEngine {
           moves.push(move);
           
           // Update FEN using Stockfish
-          this.stockfish?.stdin?.write(`position fen ${currentFen} moves ${move}\n`);
-          this.stockfish?.stdin?.write('d\n');
+          this.process?.stdin?.write(`position fen ${currentFen} moves ${move}\n`);
+          this.process?.stdin?.write('d\n');
 
           // Get new position
           currentFen = await this.getNewPosition();
@@ -299,6 +375,10 @@ export class ChessEngine {
           // Check game state
           const gameState = await this.evaluatePosition(currentFen);
           if (gameState.isGameOver) {
+            console.log('Game over!', {
+              winner: gameState.winner,
+              reason: gameState.reason
+            });
             return {
               winner: gameState.winner,
               reason: gameState.reason,
@@ -319,6 +399,7 @@ export class ChessEngine {
         }
       }
 
+      console.log('Game ended in draw by move limit');
       return {
         winner: 0,
         reason: 'Draw by move limit',
@@ -393,18 +474,20 @@ export class ChessEngine {
   }
 
   private getNewPosition(): Promise<string> {
-    this.checkStockfish();
+    if (!this.process?.stdin || !this.process?.stdout) {
+      throw new Error('Chess engine not properly initialized');
+    }
 
     return new Promise((resolve) => {
       const handler = (data: Buffer) => {
         const output = data.toString();
         if (output.includes('Fen: ')) {
-          this.stockfish!.stdout!.removeListener('data', handler);
+          this.process!.stdout!.removeListener('data', handler);
           const newFen = output.split('Fen: ')[1].split('\n')[0].trim();
           resolve(newFen);
         }
       };
-      this.stockfish!.stdout!.on('data', handler);
+      this.process!.stdout!.on('data', handler);
     });
   }
 
@@ -424,20 +507,6 @@ export class ChessEngine {
       bot.kill();
     } catch (error) {
       console.error('Error cleaning up bot:', error);
-    }
-  }
-
-  cleanup() {
-    try {
-      if (this.stockfish?.stdin) {
-        this.stockfish.stdin.write('quit\n')
-      }
-      if (this.stockfish) {
-        this.stockfish.kill()
-        this.stockfish = null
-      }
-    } catch (error) {
-      console.error('Error during cleanup:', error)
     }
   }
 
@@ -477,12 +546,12 @@ export class ChessEngine {
 
           moves.push(move);
           
-          if (!this.stockfish?.stdin) {
+          if (!this.process?.stdin) {
             throw new Error('Chess engine not initialized');
           }
           
-          this.stockfish.stdin.write(`position fen ${currentPosition} moves ${move}\n`);
-          this.stockfish.stdin.write('d\n');
+          this.process!.stdin.write(`position fen ${currentPosition} moves ${move}\n`);
+          this.process!.stdin.write('d\n');
           
           currentPosition = await this.getNewPosition();
           
@@ -595,4 +664,82 @@ export class ChessEngine {
       }
     });
   }
-} 
+
+  async startMatch(userAgentPath: string, opponentPath: string): Promise<{
+    winner: number;
+    reason: string;
+    moves: string[];
+  }> {
+    if (!this.isReady) {
+      await this.initialize();
+    }
+
+    try {
+      // Verify files exist
+      if (!fs.existsSync(userAgentPath)) {
+        throw new Error(`User agent not found at path: ${userAgentPath}`);
+      }
+      if (!fs.existsSync(opponentPath)) {
+        throw new Error(`Opponent agent not found at path: ${opponentPath}`);
+      }
+
+      // Run the match
+      return await this.runMatch(userAgentPath, opponentPath);
+    } catch (error) {
+      console.error('Match failed:', error);
+      throw error;
+    }
+  }
+
+  private async compileCppBot(sourcePath: string): Promise<string> {
+    const outputPath = sourcePath.replace('.cpp', process.platform === 'win32' ? '.exe' : '');
+    
+    return new Promise((resolve, reject) => {
+      const compiler = process.platform === 'win32' ? 'g++' : 'g++';
+      const compileProcess = spawn(compiler, [
+        sourcePath,
+        '-o', outputPath,
+        '-std=c++11',  // Enable C++11 support
+        '-Wall',       // Enable all warnings
+        '-Wextra',     // Enable extra warnings
+        '-O2',         // Optimize for speed
+        '-march=native' // Optimize for current CPU
+      ]);
+
+      let errorOutput = '';
+
+      compileProcess.stderr.on('data', (data) => {
+        const error = data.toString();
+        errorOutput += error;
+        console.error(`Compilation error: ${error}`);
+      });
+
+      compileProcess.on('close', (code) => {
+        if (code === 0) {
+          // Verify the executable was created
+          if (!fs.existsSync(outputPath)) {
+            reject(new Error(`Compilation succeeded but executable was not created at ${outputPath}`));
+            return;
+          }
+          // Make the executable executable (Unix-like systems)
+          if (process.platform !== 'win32') {
+            fs.chmodSync(outputPath, 0o755);
+          }
+          resolve(outputPath);
+        } else {
+          reject(new Error(`Compilation failed with code ${code}\n${errorOutput}`));
+        }
+      });
+
+      // Add timeout for compilation
+      setTimeout(() => {
+        if (compileProcess.killed) return;
+        compileProcess.kill();
+        reject(new Error('Compilation timed out after 30 seconds'));
+      }, 30000);
+    });
+  }
+}
+
+// Export a singleton instance
+export const chessEngine = new ChessEngine(); 

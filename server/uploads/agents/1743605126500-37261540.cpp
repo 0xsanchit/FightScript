@@ -48,26 +48,26 @@ std::string get_move(const std::string& fen) {
 // Main function to handle UCI protocol
 int main() {
     std::string line;
-    std::string current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    std::string current_fen;
 
-    // UCI protocol implementation
+    std::cout.setf(std::ios::unitbuf); // Enable automatic flushing
+
     while (std::getline(std::cin, line)) {
         if (line == "uci") {
             std::cout << "id name AggressiveBot" << std::endl;
-            std::cout << "id author Your Name" << std::endl;
+            std::cout << "id author YourName" << std::endl;
             std::cout << "uciok" << std::endl;
         }
         else if (line == "isready") {
             std::cout << "readyok" << std::endl;
         }
         else if (line.substr(0, 8) == "position") {
-            // Parse position command
-            if (line.substr(9, 3) == "fen") {
-                current_fen = line.substr(13);
+            size_t fen_pos = line.find("fen");
+            if (fen_pos != std::string::npos) {
+                current_fen = line.substr(fen_pos + 4);
             }
         }
         else if (line.substr(0, 2) == "go") {
-            // Generate and return move
             std::string move = get_move(current_fen);
             std::cout << "bestmove " << move << std::endl;
         }
@@ -75,6 +75,5 @@ int main() {
             break;
         }
     }
-
     return 0;
 } 

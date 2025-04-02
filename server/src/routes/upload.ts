@@ -10,35 +10,32 @@ import { ChessEngine } from '../engine/chess-engine'
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
+// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    const uploadDir = path.join(process.cwd(), 'uploads', 'agents');
+    console.log('Upload directory:', uploadDir);
+    
+    // Ensure the upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      console.log('Creating upload directory...');
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
+    // Generate a unique filename with .cpp extension
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const filename = `${uniqueSuffix}.cpp`;
+    console.log('Generated filename:', filename);
+    cb(null, filename);
   }
 });
 
-const upload = multer({
+const upload = multer({ 
   storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.cpp'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only C++ (.cpp) files are allowed'));
-    }
-  },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
@@ -75,38 +72,23 @@ router.post("/agent", upload.single("file"), async (req, res) => {
   }
 
   try {
-    console.log('Starting Google Drive upload for file:', req.file.filename);
-    
-    // Verify file exists before upload
+    // Verify file exists after upload
     if (!fs.existsSync(req.file.path)) {
-      throw new Error('Uploaded file not found');
+      throw new Error(`File not found at path: ${req.file.path}`);
     }
 
-    // Upload to Google Drive
-    const response = await drive.files.create({
-      requestBody: {
-        name: req.file.filename,
-        mimeType: 'text/x-c++src',
-        parents: [process.env.GOOGLE_DRIVE_FOLDER_ID || '1zZjjkeo17fQBwHn2fz5OYIXUnsNonLh9']
-      },
-      media: {
-        mimeType: 'text/x-c++src',
-        body: fs.createReadStream(req.file.path),
-      },
-    });
+    console.log('File saved successfully at:', req.file.path);
 
-    console.log('File uploaded to Google Drive:', response.data.id);
-
-    // Clean up the temporary file
-    fs.unlinkSync(req.file.path);
-    console.log('Temporary file cleaned up');
+    // Get the file ID from the filename (without extension)
+    const fileId = path.basename(req.file.filename, '.cpp');
+    console.log('Generated fileId:', fileId);
 
     // Return the file information
     res.json({
-      message: 'Agent uploaded successfully',
-      fileId: response.data.id,
-      originalName: req.file.originalname,
-      driveUrl: `https://drive.google.com/file/d/${response.data.id}/view`
+      success: true,
+      fileId,
+      message: 'File uploaded successfully',
+      path: req.file.path
     });
   } catch (error: any) {
     console.error('Upload error:', {
@@ -115,12 +97,11 @@ router.post("/agent", upload.single("file"), async (req, res) => {
       code: error.code
     });
 
-    // Clean up the temporary file in case of error
+    // Clean up the file in case of error
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
 
-    // Send more detailed error response
     res.status(500).json({ 
       error: 'Upload failed',
       details: error.message,

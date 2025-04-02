@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import Agent from '../models/Agent';
 import { spawn } from 'child_process';
+import { chessEngine } from '../engine/chess-engine';
 
 const router = express.Router();
 const engine = new ChessEngine();
@@ -119,109 +120,181 @@ router.get('/agent/:wallet', async (req, res) => {
 // Get leaderboard
 router.get('/leaderboard', async (req, res) => {
   try {
-    // Get leaderboard from database
-    // ... implement database logic here ...
-    res.json([
-      {
-        id: 'agent1',
-        name: 'Agent 1',
-        owner: 'wallet1',
-        wins: 5,
-        losses: 2,
-        rank: 1
-      },
-      // ... more agents ...
-    ]);
+    const agents = await Agent.find({ status: 'active' })
+      .sort({ points: -1, wins: -1 }) // Sort by points first, then wins
+      .limit(100) // Limit to top 100 agents
+      .select('name walletAddress wins losses draws points');
+
+    // Add rank to each agent
+    const leaderboard = agents.map((agent, index) => ({
+      id: agent._id,
+      name: agent.name,
+      owner: agent.walletAddress,
+      wins: agent.wins,
+      losses: agent.losses,
+      draws: agent.draws,
+      points: agent.points,
+      rank: index + 1
+    }));
+
+    res.json(leaderboard);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get leaderboard' });
+    console.error('Failed to get leaderboard:', error);
+    res.status(500).json({ 
+      error: 'Failed to get leaderboard',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
-// POST /api/chess/match
+// GET match status
+router.get('/match/:matchId/status', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const match = matches.get(matchId);
+
+    if (!match) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Match not found'
+      });
+    }
+
+    // Return a properly formatted JSON response
+    return res.json({
+      status: match.status,
+      message: match.message,
+      winner: match.winner,
+      moves: match.moves || []
+    });
+
+  } catch (error) {
+    console.error('Error getting match status:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Update the match endpoint to handle errors properly
 router.post('/match', async (req, res) => {
   try {
     const { fileId, opponent } = req.body;
+    console.log('Starting match with fileId:', fileId);
+    
+    if (!fileId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing fileId in request'
+      });
+    }
 
-    // 1. Download the agent file from Google Drive
-    const dest = path.join(process.cwd(), 'uploads', 'temp', `${fileId}.cpp`);
-    await downloadFromDrive(fileId, dest);
-
-    // 2. Get the aggressive bot path
-    const aggressiveBotPath = path.join(process.cwd(), 'src/engine/agents/aggressive_bot.cpp');
-
-    // 3. Generate match ID
+    // Initialize match state
     const matchId = Date.now().toString();
-
-    // 4. Store initial match state
     matches.set(matchId, {
-      status: 'compiling',
-      message: 'Compiling agents...',
-      moves: [],
+      status: 'initializing',
+      message: 'Initializing chess engine...',
+      moves: []
     });
 
+    // Get the full paths for the agents
+    const userAgentPath = path.join(process.cwd(), 'uploads', 'agents', `${fileId}.cpp`);
+    const aggressiveBotPath = path.join(process.cwd(), 'src', 'engine', 'agents', 'aggressive_bot.cpp');
+
+    console.log('Checking file paths:');
+    console.log('User agent path:', userAgentPath);
+    console.log('Aggressive bot path:', aggressiveBotPath);
+
+    // Verify files exist
+    if (!fs.existsSync(userAgentPath)) {
+      throw new Error(`User agent not found at path: ${userAgentPath}`);
+    }
+    if (!fs.existsSync(aggressiveBotPath)) {
+      throw new Error(`Aggressive bot not found at path: ${aggressiveBotPath}`);
+    }
+
+    // Return the matchId immediately
+    res.json({ 
+      status: 'initializing',
+      matchId,
+      message: 'Match initialization started'
+    });
+
+    // Initialize the engine
     try {
-      // 5. Check if Stockfish exists
-      if (!fs.existsSync(STOCKFISH_PATH)) {
-        throw new Error('Stockfish executable not found. Please ensure it is installed correctly.');
-      }
-
-      // 6. Start the match process
-      const engineProcess = spawn(STOCKFISH_PATH, [dest, aggressiveBotPath], {
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
+      console.log('Initializing chess engine...');
+      await chessEngine.initialize();
+      console.log('Chess engine initialized successfully');
       
-      matches.get(matchId)!.engineProcess = engineProcess;
-      matches.get(matchId)!.status = 'running';
-      matches.get(matchId)!.message = 'Match in progress';
+      // Update match status to running
+      const match = matches.get(matchId)!;
+      match.status = 'running';
+      match.message = 'Match in progress...';
+      console.log('Match status updated to running');
 
-      // Handle engine output
-      engineProcess.stdout.on('data', (data: Buffer) => {
-        const output = data.toString();
-        console.log('Engine output:', output);
-        
-        const currentMatch = matches.get(matchId);
-        if (currentMatch) {
-          currentMatch.moves.push(output);
+      // Run the match asynchronously
+      console.log('Starting match between agents...');
+      const result = await chessEngine.runMatch(userAgentPath, aggressiveBotPath);
+      console.log('Match completed with result:', result);
+      
+      // Get the user's agent
+      const userAgent = await Agent.findOne({ fileId });
+      
+      if (userAgent) {
+        // Update agent stats based on match result
+        if (result.winner === 1) {
+          // User won
+          userAgent.wins += 1;
+          userAgent.points += 2;
+          match.status = 'completed';
+          match.winner = 'user';
+          match.message = 'Match completed. Your agent won! (+2 points)';
+          console.log('User agent won the match');
+        } else if (result.winner === 2) {
+          // Bot won
+          userAgent.losses += 1;
+          match.status = 'completed';
+          match.winner = 'bot';
+          match.message = 'Match completed. The aggressive bot won. (+0 points)';
+          console.log('Aggressive bot won the match');
+        } else {
+          // Draw
+          userAgent.draws += 1;
+          userAgent.points += 1;
+          match.status = 'completed';
+          match.winner = 'draw';
+          match.message = 'Match completed. The game ended in a draw. (+1 point)';
+          console.log('Match ended in a draw');
         }
-      });
 
-      // Handle engine errors
-      engineProcess.stderr.on('data', (data: Buffer) => {
-        console.error('Engine error:', data.toString());
-      });
+        match.moves = result.moves;
+        await userAgent.save();
+        console.log('Agent stats updated successfully');
 
-      // Handle engine completion
-      engineProcess.on('close', (code: number) => {
-        const currentMatch = matches.get(matchId);
-        if (currentMatch) {
-          currentMatch.status = code === 0 ? 'completed' : 'error';
-          currentMatch.message = code === 0 
-            ? 'Match completed successfully' 
-            : `Match failed with code ${code}`;
-        }
-      });
-
-      // Return match ID for status polling
-      res.json({ 
-        matchId,
-        status: 'started',
-        message: 'Match started successfully' 
-      });
-
+        console.log('Match completed successfully:', {
+          winner: match.winner,
+          reason: result.reason,
+          moves: result.moves.length,
+          points: userAgent.points
+        });
+      } else {
+        console.error('User agent not found in database');
+        match.status = 'error';
+        match.message = 'User agent not found in database';
+      }
     } catch (error) {
-      matches.set(matchId, {
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Failed to start match',
-        moves: []
-      });
-      throw error;
+      console.error('Match failed:', error);
+      const match = matches.get(matchId)!;
+      match.status = 'error';
+      match.message = error instanceof Error ? error.message : 'Internal server error';
     }
 
   } catch (error) {
     console.error('Failed to start match:', error);
-    res.status(500).json({ 
-      error: 'Failed to start match',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    return res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Internal server error'
     });
   }
 });
