@@ -12,6 +12,7 @@ import { ActivityFeed } from "@/app/components/activity-feed"
 import { LoadingState } from "@/app/components/ui/loading-state"
 import Navbar from "@/components/navbar"
 import { fetchUserStats } from "../lib/api"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface UserStats {
   username: string;
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [agent, setAgent] = useState<Agent | null>(null)
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -61,6 +63,37 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData();
+  }, [publicKey]);
+
+  useEffect(() => {
+    const fetchAgentStats = async () => {
+      if (!publicKey) return;
+      
+      try {
+        const response = await fetch(`/api/users/${publicKey.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch agent stats');
+        const data = await response.json();
+        // Ensure agent has a name, defaulting to 'Anonymous' if missing
+        const processedAgent = {
+          ...data.agent,
+          name: data.agent?.name || 'Anonymous',
+          wins: data.agent?.wins || 0,
+          losses: data.agent?.losses || 0,
+          draws: data.agent?.draws || 0,
+          points: data.agent?.points || 0,
+          rank: data.agent?.rank || 0
+        };
+        setAgent(processedAgent);
+      } catch (error) {
+        console.error('Error fetching agent stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgentStats();
+    const interval = setInterval(fetchAgentStats, 5000);
+    return () => clearInterval(interval);
   }, [publicKey]);
 
   if (!publicKey) {
@@ -186,7 +219,43 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="agents">
-              <AgentsList agents={userStats?.agents || []} showActions />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Agent Stats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!publicKey ? (
+                    <p className="text-center">Please connect your wallet to view your stats</p>
+                  ) : loading ? (
+                    <p className="text-center">Loading...</p>
+                  ) : !agent ? (
+                    <p className="text-center">No agent found. Upload an agent to start competing!</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead className="text-right">Rank</TableHead>
+                          <TableHead className="text-right">Points</TableHead>
+                          <TableHead className="text-right">Wins</TableHead>
+                          <TableHead className="text-right">Draws</TableHead>
+                          <TableHead className="text-right">Losses</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>{agent.name}</TableCell>
+                          <TableCell className="text-right">#{agent.rank || '-'}</TableCell>
+                          <TableCell className="text-right font-bold text-blue-600">{agent.points || 0}</TableCell>
+                          <TableCell className="text-right text-green-600">{agent.wins || 0}</TableCell>
+                          <TableCell className="text-right text-yellow-600">{agent.draws || 0}</TableCell>
+                          <TableCell className="text-right text-red-600">{agent.losses || 0}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="activities">

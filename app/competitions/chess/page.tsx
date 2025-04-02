@@ -38,6 +38,8 @@ interface Agent {
   draws: number;
   points: number;
   rank: number;
+  fileId: string;
+  walletAddress: string;
 }
 
 interface MatchResult {
@@ -245,7 +247,7 @@ export default function ChessCompetition() {
         },
         body: JSON.stringify({
           fileId: uploadData.fileId,
-          opponent: 'aggressive_bot'
+          walletAddress: publicKey.toString()
         }),
       });
 
@@ -345,10 +347,18 @@ export default function ChessCompetition() {
   };
 
   const startMatch = async () => {
-    if (!userAgent || !selectedOpponent) {
+    if (!userAgent) {
       setMatchStatus({
         status: 'error',
-        message: 'Please select an opponent'
+        message: 'Please upload an agent first'
+      });
+      return;
+    }
+
+    if (!publicKey) {
+      setMatchStatus({
+        status: 'error',
+        message: 'Please connect your wallet'
       });
       return;
     }
@@ -359,30 +369,32 @@ export default function ChessCompetition() {
         message: 'Match in progress...',
         winner: undefined
       });
+      
       const response = await fetch('/api/chess/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          agent1Id: userAgent.id,
-          agent2Id: selectedOpponent
+          fileId: userAgent.fileId,
+          walletAddress: publicKey.toString()
         }),
       });
 
-      const result = await response.json();
-      setMatchStatus({
-        status: 'completed',
-        message: `Match completed! ${result.reason}`,
-        winner: result.winner.toString()
-      });
-      fetchLeaderboard();
-      fetchUserAgent();
+      if (!response.ok) {
+        throw new Error('Failed to start match');
+      }
+
+      const matchData = await response.json();
+      pollMatchStatus(matchData.matchId);
+
     } catch (error) {
+      console.error('Error starting match:', error);
       setMatchStatus({
         status: 'error',
         message: 'Failed to start match'
       });
+      toast.error('Failed to start match');
     }
   };
 
@@ -538,56 +550,6 @@ export default function ChessCompetition() {
             {/* Match Result Display */}
             <MatchResultDisplay {...matchStatus} />
           </div>
-        </div>
-
-        {/* Agent Selection */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Start a Match</h2>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Your Agent
-              </label>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="font-medium">{userAgent?.name}</p>
-                <p className="text-sm text-gray-500">Rank: {userAgent?.rank}</p>
-              </div>
-            </div>
-        <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Opponent
-              </label>
-              <select
-                value={selectedOpponent}
-                onChange={(e) => setSelectedOpponent(e.target.value)}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-              >
-                <option value="">Select an opponent</option>
-                {leaderboard
-                  .filter(agent => agent.id !== userAgent?.id)
-                  .map(agent => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name} (Rank: {agent.rank})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-          {uploadState.error && (
-            <p className="text-red-600 mt-4">{uploadState.error}</p>
-          )}
-          <button
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-            onClick={startMatch}
-            disabled={!selectedOpponent}
-          >
-            Start Match
-          </button>
-          {matchStatus.status !== 'idle' && (
-            <div className="mt-4 p-4 rounded-md bg-blue-50">
-              <p className="text-sm text-blue-700">{matchStatus.message}</p>
-            </div>
-          )}
         </div>
 
         {/* Local Leaderboard */}

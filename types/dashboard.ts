@@ -6,7 +6,13 @@ export interface Agent {
   winRate: number
   matchesPlayed: number
   matchesWon: number
+  wins: number
+  losses: number
+  draws: number
+  points: number
+  rank: number
   status: string
+  createdAt: string
 }
 
 export interface Activity {

@@ -180,13 +180,13 @@ router.get('/match/:matchId/status', async (req, res) => {
 // Update the match endpoint to handle errors properly
 router.post('/match', async (req, res) => {
   try {
-    const { fileId, opponent } = req.body;
-    console.log('Starting match with fileId:', fileId);
+    const { fileId, walletAddress } = req.body;
+    console.log('Starting match with walletAddress:', walletAddress);
     
-    if (!fileId) {
+    if (!walletAddress) {
       return res.status(400).json({
         status: 'error',
-        message: 'Missing fileId in request'
+        message: 'Missing walletAddress in request'
       });
     }
 
@@ -238,51 +238,64 @@ router.post('/match', async (req, res) => {
       const result = await chessEngine.runMatch(userAgentPath, aggressiveBotPath);
       console.log('Match completed with result:', result);
       
-      // Get the user's agent
-      const userAgent = await Agent.findOne({ fileId });
-      
-      if (userAgent) {
-        // Update agent stats based on match result
-        if (result.winner === 1) {
-          // User won
-          userAgent.wins += 1;
-          userAgent.points += 2;
-          match.status = 'completed';
-          match.winner = 'user';
-          match.message = 'Match completed. Your agent won! (+2 points)';
-          console.log('User agent won the match');
-        } else if (result.winner === 2) {
-          // Bot won
-          userAgent.losses += 1;
-          match.status = 'completed';
-          match.winner = 'bot';
-          match.message = 'Match completed. The aggressive bot won. (+0 points)';
-          console.log('Aggressive bot won the match');
-        } else {
-          // Draw
-          userAgent.draws += 1;
-          userAgent.points += 1;
-          match.status = 'completed';
-          match.winner = 'draw';
-          match.message = 'Match completed. The game ended in a draw. (+1 point)';
-          console.log('Match ended in a draw');
-        }
-
-        match.moves = result.moves;
-        await userAgent.save();
-        console.log('Agent stats updated successfully');
-
-        console.log('Match completed successfully:', {
-          winner: match.winner,
-          reason: result.reason,
-          moves: result.moves.length,
-          points: userAgent.points
-        });
+      // Update match status and database based on result
+      let points = 0;
+      if (result.winner === 1) {
+        match.status = 'completed';
+        match.winner = 'user';
+        match.message = 'Match completed. Your agent won! (+2 points)';
+        points = 2;
+      } else if (result.winner === 2) {
+        match.status = 'completed';
+        match.winner = 'bot';
+        match.message = 'Match completed. The aggressive bot won. (+0 points)';
+        points = 0;
       } else {
-        console.error('User agent not found in database');
-        match.status = 'error';
-        match.message = 'User agent not found in database';
+        match.status = 'completed';
+        match.winner = 'draw';
+        match.message = 'Match completed. The game ended in a draw. (+1 point)';
+        points = 1;
       }
+
+      match.moves = result.moves;
+      console.log('Match completed successfully:', {
+        winner: match.winner,
+        reason: result.reason,
+        moves: result.moves.length
+      });
+
+      // Update or create agent in database
+      try {
+        const agent = await Agent.findOneAndUpdate(
+          { walletAddress },
+          {
+            $inc: {
+              wins: result.winner === 1 ? 1 : 0,
+              losses: result.winner === 2 ? 1 : 0,
+              draws: result.winner === 0 ? 1 : 0,
+              points: points
+            },
+            $setOnInsert: {
+              name: 'Anonymous',
+              status: 'active',
+              createdAt: new Date()
+            }
+          },
+          { upsert: true, new: true }
+        );
+
+        console.log('Agent stats updated in database:', {
+          walletAddress,
+          wins: agent.wins,
+          losses: agent.losses,
+          draws: agent.draws,
+          points: agent.points
+        });
+      } catch (dbError) {
+        console.error('Failed to update agent stats:', dbError);
+        // Continue even if database update fails
+      }
+
     } catch (error) {
       console.error('Match failed:', error);
       const match = matches.get(matchId)!;
