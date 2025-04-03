@@ -2,7 +2,6 @@ import { ChildProcess, spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { google } from 'googleapis'
-import { register } from 'ts-node'
 
 interface ChessMove {
   from: string
