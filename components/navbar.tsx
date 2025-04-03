@@ -3,9 +3,8 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { User, Trophy } from "lucide-react"
-import { WalletButton } from "./wallet-button"
+import { WalletButton } from "@/app/components/WalletButton"
 import { useWallet } from "@solana/wallet-adapter-react"
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 
 const navigationItems = [
   { href: "/competitions", label: "Competitions" },
@@ -14,7 +13,7 @@ const navigationItems = [
   // Remove or update any staking-related links
 ]
 
-export default function Navbar() {
+export function Navbar() {
   const { publicKey } = useWallet()
 
   return (
@@ -32,12 +31,12 @@ export default function Navbar() {
           ))}
         </nav>
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon">
+          {publicKey ? (
+            <Link href="/dashboard" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
               <User className="h-4 w-4" />
-              <span className="sr-only">Dashboard</span>
-            </Button>
-          </Link>
+              Dashboard
+            </Link>
+          ) : null}
           <Link href="https://0xmuon.github.io/co3pe-docs/" target="_blank" rel="noopener noreferrer" className="text-black">
             Docs
           </Link>

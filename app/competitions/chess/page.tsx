@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { toast } from "react-hot-toast"
 import CompetitionsNavbar from "@/components/competitions-navbar"
@@ -128,7 +128,7 @@ export default function ChessCompetition() {
     success: false
   });
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     if (!publicKey) {
       setIsLoading(false);
       return;
@@ -143,9 +143,9 @@ export default function ChessCompetition() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [publicKey]);
 
-  const fetchUserAgent = async () => {
+  const fetchUserAgent = useCallback(async () => {
     if (!publicKey) return;
     try {
       const response = await fetch(`/api/users/${publicKey.toString()}/agent`);
@@ -155,7 +155,7 @@ export default function ChessCompetition() {
     } catch (error) {
       console.error('Error fetching user agent:', error);
     }
-  };
+  }, [publicKey]);
 
   useEffect(() => {
     if (publicKey) {
@@ -164,7 +164,7 @@ export default function ChessCompetition() {
     } else {
       setIsLoading(false);
     }
-  }, [publicKey]);
+  }, [publicKey, fetchUserData, fetchUserAgent]);
 
   const fetchLeaderboard = async () => {
     try {

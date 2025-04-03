@@ -1,5 +1,5 @@
 import Footer from "@/components/footer"
-import Navbar from "@/components/navbar"
+import { Navbar } from "@/components/navbar"
 import { Bot, Brain, Code, Coins, Globe, Shield } from "lucide-react"
 
 export default function AboutPage() {

@@ -1,10 +1,10 @@
 "use client"
 
 import { useWallet } from "@solana/wallet-adapter-react"
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Wallet } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { WalletButton } from "@/app/components/WalletButton"
 
 export function CTA() {
   const { publicKey } = useWallet()
@@ -30,9 +30,7 @@ export function CTA() {
                 </Button>
               </Link>
             ) : (
-              <WalletMultiButton 
-                className="flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
+              <WalletButton />
             )}
             <Link href="/about">
               <Button variant="outline">Learn More</Button>

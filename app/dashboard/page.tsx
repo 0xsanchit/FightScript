@@ -10,7 +10,7 @@ import type { Activity } from "@/types/dashboard"
 import { AgentsList } from "@/app/components/agents-list"
 import { ActivityFeed } from "@/app/components/activity-feed"
 import { LoadingState } from "@/app/components/ui/loading-state"
-import Navbar from "@/components/navbar"
+import { Navbar } from "@/components/navbar"
 import { fetchUserStats } from "../lib/api"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 

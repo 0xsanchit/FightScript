@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import Navbar from '@/components/navbar' // Adjust the import path as necessary
+import { Navbar } from "@/components/navbar"
 
 export const metadata: Metadata = {
   title: 'Stake CO3PE Tokens | CO3PE Platform',
