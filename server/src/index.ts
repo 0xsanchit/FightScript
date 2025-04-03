@@ -1,5 +1,5 @@
 // src/index.ts
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
@@ -40,7 +40,7 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/chess', chessRouter);
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something broke!', details: err.message });
 });
