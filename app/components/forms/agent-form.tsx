@@ -4,87 +4,67 @@ import { useState } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 
 export function AgentForm() {
   const { publicKey } = useWallet()
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "other",
-    description: "",
-    sourceCode: ""
-  })
+  const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!publicKey) return
+    if (!publicKey || !file) return
+
+    setLoading(true)
+    setError(null)
 
     try {
-      const response = await fetch('/api/agents', {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('walletAddress', publicKey.toString())
+
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          user: publicKey.toString()
-        }),
+        body: formData,
       })
 
-      if (response.ok) {
-        alert('Agent created successfully!')
+      if (!response.ok) {
+        throw new Error('Failed to upload agent')
       }
-    } catch (error) {
-      console.error('Error creating agent:', error)
+
+      // Refresh the page to show updated agent info
+      window.location.reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Agent Name</label>
+      <div className="space-y-2">
+        <Label htmlFor="file">Agent File</Label>
         <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          id="file"
+          type="file"
+          accept=".cpp"
+          onChange={handleFileChange}
           required
         />
+        <p className="text-sm text-gray-500">Upload your C++ agent file</p>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Category</label>
-        <Select
-          value={formData.category}
-          onValueChange={(value) => setFormData({ ...formData, category: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="chess">Chess</SelectItem>
-            <SelectItem value="strategy">Strategy</SelectItem>
-            <SelectItem value="trading">Trading</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Description</label>
-        <Textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          maxLength={500}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Source Code URL</label>
-        <Input
-          type="url"
-          value={formData.sourceCode}
-          onChange={(e) => setFormData({ ...formData, sourceCode: e.target.value })}
-          required
-        />
-      </div>
-      <Button type="submit" className="w-full">Submit Agent</Button>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <Button type="submit" disabled={loading || !publicKey || !file}>
+        {loading ? 'Uploading...' : 'Upload Agent'}
+      </Button>
     </form>
   )
 } 

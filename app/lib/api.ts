@@ -76,4 +76,14 @@ export async function uploadAgent(file: File, wallet: string) {
     console.error('Error uploading agent:', error);
     throw new Error('Failed to connect to server. Please make sure the server is running.');
   }
+}
+
+export async function fetchUser(walletAddress: string) {
+  try {
+    const response = await fetch(`${API_BASE}/users?wallet=${walletAddress}`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw new Error('Failed to connect to server. Please make sure the server is running.');
+  }
 } 

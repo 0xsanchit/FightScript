@@ -7,7 +7,7 @@ import CompetitionsNavbar from "@/components/competitions-navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { startMatch, fetchUserStats } from '../../lib/api'
+import { startMatch, fetchUserStats, fetchUser } from '../../lib/api'
 import { LoadingState } from "@/components/ui/loading-state"
 
 const leaderboardData = [
@@ -128,27 +128,15 @@ export default function ChessCompetition() {
     success: false
   });
 
-  useEffect(() => {
-    fetchUser();
-    if (publicKey) {
-      fetchUserAgent();
-      fetchLeaderboard();
-    }
-  }, [publicKey]);
-
-  const fetchUser = async () => {
+  const fetchUserData = async () => {
     if (!publicKey) {
-      setUser(null);
       setIsLoading(false);
       return;
     }
-
     try {
-      const response = await fetch(`/api/users?wallet=${publicKey.toString()}`);
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      }
+      const data = await fetchUser(publicKey.toString());
+      setUser(data);
+      console.log('User data fetched:', data); // Debug log
     } catch (error) {
       console.error('Error fetching user:', error);
       toast.error('Failed to fetch user data');
@@ -160,13 +148,23 @@ export default function ChessCompetition() {
   const fetchUserAgent = async () => {
     if (!publicKey) return;
     try {
-      const response = await fetch(`/api/chess/agent/${publicKey.toString()}`);
+      const response = await fetch(`/api/users/${publicKey.toString()}/agent`);
+      if (!response.ok) throw new Error('Failed to fetch user agent');
       const data = await response.json();
       setUserAgent(data);
     } catch (error) {
-      console.error('Failed to fetch user agent:', error);
+      console.error('Error fetching user agent:', error);
     }
   };
+
+  useEffect(() => {
+    if (publicKey) {
+      fetchUserData();
+      fetchUserAgent();
+    } else {
+      setIsLoading(false);
+    }
+  }, [publicKey]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -405,13 +403,13 @@ export default function ChessCompetition() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Chess AI Arena</h1>
           <div className="flex items-center gap-2">
-            <span className="text-lg">
+            <span className="text-lg font-medium">
               {isLoading ? (
                 <LoadingState />
-              ) : user ? (
-                user.username
+              ) : user?.username ? (
+                <span className="text-blue-600">{user.username}</span>
               ) : (
-                "Anonymous"
+                <span className="text-gray-500">Anonymous</span>
               )}
             </span>
           </div>
