@@ -8,6 +8,22 @@ async function handleResponse(response: Response) {
   return response.json();
 }
 
+export async function proxyRequest(path: string, options: RequestInit = {}) {
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error(`Error in proxy request to ${path}:`, error);
+    throw new Error('Failed to connect to server. Please make sure the server is running.');
+  }
+}
+
 export async function fetchUserStats(walletAddress: string) {
   try {
     const response = await fetch(`${API_BASE}/stats?wallet=${walletAddress}`);
