@@ -1,7 +1,6 @@
 [build]
-builder = "nixpacks"
-buildCommand = "npm install --ignore-scripts && npm run build"
-nixpacksConfigPath = "nixpacks.toml"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm start"

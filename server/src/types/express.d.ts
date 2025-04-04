@@ -4,16 +4,7 @@ declare module 'express' {
     params: any;
     query: any;
     headers: any;
-    file?: {
-      fieldname: string;
-      originalname: string;
-      encoding: string;
-      mimetype: string;
-      destination: string;
-      filename: string;
-      path: string;
-      size: number;
-    };
+    file?: Express.Multer.File;
   }
 
   export interface Response {

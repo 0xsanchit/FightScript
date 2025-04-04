@@ -9,15 +9,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
+    // Create response with cookie
+    const response = NextResponse.json({ success: true })
+    
     // Set the wallet cookie
-    cookies().set('wallet', wallet, {
+    response.cookies.set('wallet', wallet, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/'
     })
 
-    return NextResponse.json({ success: true })
+    return response
   } catch (error) {
     console.error('Auth error:', error)
     return NextResponse.json({ error: 'Auth failed' }, { status: 500 })

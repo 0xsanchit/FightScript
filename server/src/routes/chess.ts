@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { ChessEngine } from '../engine/chess-engine';
-import multer from 'multer';
+import multer, { File } from 'multer';
 import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
@@ -30,18 +30,18 @@ const drive = google.drive({ version: 'v3', auth });
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: './uploads/agents',
-  filename: (req, file, cb) => {
+  filename: (req: Request, file: File, cb: (error: Error | null, filename: string) => void) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
 const upload = multer({
   storage,
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file: File, cb: (error: Error | null, acceptFile: boolean) => void) => {
     if (file.originalname.endsWith('.cpp')) {
       cb(null, true);
     } else {
-      cb(new Error('Only .cpp files are allowed'));
+      cb(new Error('Only .cpp files are allowed'), false);
     }
   },
   limits: {
