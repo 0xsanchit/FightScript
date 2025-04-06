@@ -27,6 +27,8 @@ const allowedOrigins = [
   process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   'https://co3pe.vercel.app',
   'https://co3pe.vercel.app/',
+  'https://co3pe-git-main-rudraksh-joshis-projects-444a4ec5.vercel.app',
+  'https://co3pe-j8uapg95q-rudraksh-joshis-projects-444a4ec5.vercel.app',
   'http://localhost:3000'
 ];
 
@@ -73,6 +75,16 @@ app.use('/api/users', usersRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/chess', chessRouter);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    serverUrl: process.env.NODE_ENV === 'production' ? 'https://co3pe.onrender.com' : 'http://localhost:5000'
+  });
+});
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
