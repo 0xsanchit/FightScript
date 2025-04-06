@@ -12,14 +12,17 @@ const nextConfig = {
     return config
   },
   async rewrites() {
+    // Use environment variable for API URL, fallback to localhost for development
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    
     return [
       {
         source: '/api/chess/:path*',
-        destination: 'http://localhost:5000/api/chess/:path*',
+        destination: `${apiUrl}/api/chess/:path*`,
       },
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },
