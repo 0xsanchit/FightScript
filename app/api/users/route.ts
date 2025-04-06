@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+// Use hardcoded API URL for production
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://co3pe.onrender.com/api'
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api')
 
 export async function GET(request: Request) {
   try {
@@ -13,13 +16,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
     }
 
-    const response = await fetch(`${API_BASE_URL}/users?wallet=${wallet}`)
+    const response = await fetch(`${API_BASE_URL}/users?wallet=${wallet}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
     const data = await response.json()
     
     if (!response.ok) {
+      console.error('Error response from Express server:', data)
       return NextResponse.json(data, { status: response.status })
     }
     
+    console.log('Successfully proxied request to Express server')
     return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to proxy request to Express server:', error)
@@ -49,9 +59,11 @@ export async function POST(request: Request) {
     const data = await response.json()
     
     if (!response.ok) {
+      console.error('Error response from Express server:', data)
       return NextResponse.json(data, { status: response.status })
     }
     
+    console.log('Successfully proxied request to Express server')
     return NextResponse.json(data)
   } catch (error) {
     console.error('Failed to proxy request to Express server:', error)
