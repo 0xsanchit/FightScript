@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NODE_ENV === 'production' 
+  ? 'https://co3pe.onrender.com/api'
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
@@ -96,10 +98,23 @@ export async function uploadAgent(file: File, wallet: string) {
 
 export async function fetchUser(walletAddress: string) {
   try {
+    console.log('Fetching user with wallet:', walletAddress);
+    console.log('Using API URL:', API_BASE);
+    
     const response = await fetch(`${API_BASE}/users?wallet=${walletAddress}`);
-    return handleResponse(response);
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      console.error('Error response:', errorData);
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('User data received:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching user:', error);
-    throw new Error('Failed to connect to server. Please make sure the server is running.');
+    throw error instanceof Error ? error : new Error('Failed to connect to server. Please make sure the server is running.');
   }
 } 
