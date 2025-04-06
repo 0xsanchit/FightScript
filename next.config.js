@@ -12,13 +12,21 @@ const nextConfig = {
     return config
   },
   async rewrites() {
-    // Use environment variable for API URL, fallback to localhost for development
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    // Hardcode the API URL for production
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://co3pe.onrender.com' 
+      : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+    
+    console.log('Using API URL:', apiUrl);
     
     return [
       {
         source: '/api/chess/:path*',
         destination: `${apiUrl}/api/chess/:path*`,
+      },
+      {
+        source: '/api/users/:id',
+        destination: `${apiUrl}/api/users/:id`,
       },
       {
         source: '/api/:path*',

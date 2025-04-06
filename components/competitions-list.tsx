@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
 async function getCompetitions(): Promise<Competition[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/competitions`, {
+    const res = await fetch(`/api/competitions`, {
       cache: 'force-cache', // Use Next.js cache
       next: { 
         revalidate: 300 // Revalidate every 5 minutes
