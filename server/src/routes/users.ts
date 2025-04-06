@@ -36,6 +36,63 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/users/:id - Get user by wallet address
+router.get('/:id', async (req, res) => {
+  try {
+    const walletAddress = req.params.id;
+    console.log('Received wallet address:', walletAddress); // Debug log
+    
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'No wallet address provided' });
+    }
+
+    console.log('Connecting to database...'); // Debug log
+    await dbConnect();
+    console.log('Database connected, searching for user...'); // Debug log
+    
+    const user = await User.findOne({ walletAddress }).lean();
+    console.log('User found:', user ? 'Yes' : 'No'); // Debug log
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Find the agent for this user
+    const agent = await Agent.findOne({ walletAddress }).lean();
+    console.log('Agent found:', agent ? 'Yes' : 'No'); // Debug log
+
+    // Calculate rank if agent exists
+    let rank = 0;
+    if (agent) {
+      // Count agents with more points than this one
+      const higherRankedAgents = await Agent.countDocuments({ points: { $gt: agent.points } });
+      rank = higherRankedAgents + 1; // Rank is 1-based
+    }
+
+    // Return user with agent data
+    return res.json({
+      ...user,
+      agent: agent ? {
+        ...agent,
+        rank
+      } : {
+        name: 'Anonymous',
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        points: 0,
+        rank: 0
+      }
+    });
+  } catch (error: any) {
+    console.error('Failed to fetch user:', error);
+    return res.status(500).json({ 
+      error: 'Failed to fetch user data', 
+      details: error?.message || 'Unknown error'
+    });
+  }
+});
+
 // POST /api/users
 router.post('/', async (req, res) => {
   try {

@@ -7,6 +7,7 @@ export interface IAgent extends Document {
   losses: number;
   draws: number;
   points: number;
+  rank: number;
   status: 'active' | 'inactive';
   createdAt: Date;
 }
@@ -24,6 +25,7 @@ const AgentSchema = new Schema({
   losses: { type: Number, default: 0 },
   draws: { type: Number, default: 0 },
   points: { type: Number, default: 0 },
+  rank: { type: Number, default: 0 },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   createdAt: { type: Date, default: Date.now }
 });
