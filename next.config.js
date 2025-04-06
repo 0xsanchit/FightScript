@@ -11,28 +11,6 @@ const nextConfig = {
     }
     return config
   },
-  async rewrites() {
-    const apiUrl = process.env.NODE_ENV === 'production'
-      ? 'https://co3pe.onrender.com/api'
-      : 'http://localhost:5000/api';
-
-    console.log(`Using API URL: ${apiUrl}`);
-
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
-      },
-      {
-        source: '/api/users/:id',
-        destination: `${apiUrl}/users/:id`,
-      },
-      {
-        source: '/api/health',
-        destination: `${apiUrl}/health`,
-      },
-    ];
-  },
   transpilePackages: [
     '@solana/wallet-adapter-react',
     '@solana/wallet-adapter-react-ui',

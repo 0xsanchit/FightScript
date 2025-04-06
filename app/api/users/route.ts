@@ -1,43 +1,40 @@
 import { NextResponse } from 'next/server'
 
-// Use hardcoded API URL for production
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://co3pe.onrender.com/api'
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api')
+const BACKEND_URL = process.env.NODE_ENV === 'production'
+  ? 'https://co3pe.onrender.com'
+  : 'http://localhost:5000'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const wallet = searchParams.get('wallet')
     
-    console.log('Proxying GET request to Express server:', `${API_BASE_URL}/users?wallet=${wallet}`)
+    console.log('Next.js API Route: Fetching user with wallet:', wallet)
+    console.log('Backend URL:', BACKEND_URL)
     
-    if (!wallet) {
-      return NextResponse.json({ error: 'No wallet provided' }, { status: 400 })
-    }
-
-    const response = await fetch(`${API_BASE_URL}/users?wallet=${wallet}`, {
+    const response = await fetch(`${BACKEND_URL}/api/users${wallet ? `?wallet=${wallet}` : ''}`, {
       headers: {
         'Content-Type': 'application/json',
       },
     })
     
-    const data = await response.json()
+    console.log('Backend response status:', response.status)
     
     if (!response.ok) {
-      console.error('Error response from Express server:', data)
-      return NextResponse.json(data, { status: response.status })
+      const error = await response.json()
+      console.error('Backend error:', error)
+      return NextResponse.json(
+        { error: error.error || 'Failed to fetch user data' },
+        { status: response.status }
+      )
     }
     
-    console.log('Successfully proxied request to Express server')
+    const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Failed to proxy request to Express server:', error)
+    console.error('Error in Next.js API route:', error)
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to fetch user',
-        details: error instanceof Error ? error.stack : undefined
-      },
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }
@@ -46,9 +43,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    console.log('Proxying POST request to Express server:', `${API_BASE_URL}/users`)
+    console.log('Proxying POST request to Express server:', `${BACKEND_URL}/api/users`)
     
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await fetch(`${BACKEND_URL}/api/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
