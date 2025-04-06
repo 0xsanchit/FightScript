@@ -13,6 +13,7 @@ import { UserOnboardingModal } from "./components/user-onboarding-modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { toast } from "sonner"
+import { fetchUser } from "./lib/api"
 
 export default function Home() {
   const { publicKey } = useWallet()
@@ -27,16 +28,20 @@ export default function Home() {
       setIsCheckingUser(true)
       try {
         console.log('Checking user with wallet:', publicKey.toString())
-        const response = await fetch(`/api/users/${publicKey.toString()}`)
-        console.log('User check response status:', response.status)
-        if (response.status === 404) {
+        await fetchUser(publicKey.toString())
+        // If we get here, the user exists
+        setIsNewUser(false)
+        setShowOnboarding(false)
+      } catch (error) {
+        console.error('Error checking user:', error)
+        // If the error is a 404, the user doesn't exist
+        if (error instanceof Error && error.message.includes('404')) {
           console.log('New user detected, showing onboarding modal')
           setIsNewUser(true)
           setShowOnboarding(true)
+        } else {
+          toast.error("Failed to check user status")
         }
-      } catch (error) {
-        console.error('Error checking user:', error)
-        toast.error("Failed to check user status")
       } finally {
         setIsCheckingUser(false)
       }

@@ -17,7 +17,7 @@ export async function proxyRequest(url: string, options: RequestInit = {}) {
 }
 
 export async function fetchUser(walletAddress: string): Promise<User> {
-  const response = await fetch(`/api/users?walletAddress=${walletAddress}`);
+  const response = await fetch(`/api/users/${walletAddress}`);
   if (!response.ok) {
     throw new Error('Failed to fetch user');
   }

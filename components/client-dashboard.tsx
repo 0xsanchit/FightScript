@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/ui/loading-state"
 import { ClientCompetitions } from "@/components/client-competitions"
 import type { Agent, Activity, User } from "@/types/dashboard"
 import { UserOnboarding } from "@/components/user-onboarding"
+import { fetchUser } from "@/app/lib/api"
 
 export function ClientDashboard() {
   const { publicKey } = useWallet()
@@ -24,21 +25,17 @@ export function ClientDashboard() {
 
       try {
         const walletAddress = publicKey.toString()
-        const res = await fetch(`/api/users?wallet=${encodeURIComponent(walletAddress)}`)
-        
-        if (res.status === 404) {
-          // New user
-          setUser(null)
-          setLoading(false)
-          return
+        try {
+          const userData = await fetchUser(walletAddress)
+          setUser(userData)
+        } catch (err) {
+          // If the error is a 404, the user doesn't exist
+          if (err instanceof Error && err.message.includes('404')) {
+            setUser(null)
+          } else {
+            throw err
+          }
         }
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch user data')
-        }
-
-        const userData = await res.json()
-        setUser(userData)
       } catch (err) {
         console.error('Error checking user:', err)
         setError(err instanceof Error ? err.message : 'Something went wrong')

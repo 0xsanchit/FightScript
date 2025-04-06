@@ -4,11 +4,12 @@ const BACKEND_URL = process.env.NODE_ENV === 'production'
   ? 'https://co3pe.onrender.com'
   : 'http://localhost:5000';
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  { params }: { params: { wallet: string } }
+) {
   try {
-    // Get the URL search params
-    const { searchParams } = new URL(request.url);
-    const wallet = searchParams.get('wallet');
+    const wallet = params.wallet;
 
     console.log('Next.js API Route: Fetching user stats with wallet:', wallet);
     console.log('Backend URL:', BACKEND_URL);

@@ -38,7 +38,7 @@ export async function proxyRequest(path: string, options: RequestInit = {}) {
 export async function fetchUserStats(walletAddress: string) {
   try {
     console.log('Fetching user stats with wallet:', walletAddress);
-    const url = `${API_BASE}/users/stats?wallet=${walletAddress}`;
+    const url = `${API_BASE}/users/${walletAddress}/stats`;
     console.log('Request URL:', url);
     
     const response = await fetch(url, {

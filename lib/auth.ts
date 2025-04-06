@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { User } from '@/types/user'
 import dbConnect from './mongodb'
 import UserModel from '@/models/User'
+import { fetchUser } from '@/app/lib/api'
 
 export async function getWalletAddress(): Promise<string | null> {
   const headersList = await headers()
@@ -14,9 +15,7 @@ export async function getUser(): Promise<any | null> {
   if (!walletAddress) return null
 
   try {
-    const response = await fetch(`/api/users?wallet=${walletAddress}`)
-    if (!response.ok) return null
-    return response.json()
+    return await fetchUser(walletAddress)
   } catch (error) {
     console.error('Error getting user:', error)
     return null
