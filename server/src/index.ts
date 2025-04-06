@@ -1,5 +1,5 @@
 // src/index.ts
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'production') {
   dotenv.config();
 }
 
-const app = express();
+const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
@@ -69,15 +69,11 @@ if (!fs.existsSync(uploadsDir)) {
 // Connect to MongoDB
 dbConnect();
 
-// Routes
-app.use('/api/competitions', competitionsRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/upload', uploadRouter);
-app.use('/api/chess', chessRouter);
+// Create a router for the health check
+const healthRouter = express.Router();
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+healthRouter.get('/', (req: Request, res: Response): void => {
   res.status(200).json({ 
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -85,6 +81,14 @@ app.get('/health', (req, res) => {
     serverUrl: process.env.NODE_ENV === 'production' ? 'https://co3pe.onrender.com' : 'http://localhost:5000'
   });
 });
+
+// Routes
+app.use('/api/competitions', competitionsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/stats', statsRouter);
+app.use('/api/upload', uploadRouter);
+app.use('/api/chess', chessRouter);
+app.use('/health', healthRouter);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

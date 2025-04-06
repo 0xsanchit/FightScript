@@ -24,18 +24,18 @@ const drive = googleapis_1.google.drive({ version: 'v3', auth });
 // Configure multer for file uploads
 const storage = multer_1.default.diskStorage({
     destination: './uploads/agents',
-    filename: (req, file, cb) => {
+    filename: function (req, file, cb) {
         cb(null, `${Date.now()}-${file.originalname}`);
     }
 });
 const upload = (0, multer_1.default)({
     storage,
-    fileFilter: (req, file, cb) => {
+    fileFilter: function (req, file, cb) {
         if (file.originalname.endsWith('.cpp')) {
             cb(null, true);
         }
         else {
-            cb(new Error('Only .cpp files are allowed'), false);
+            cb(null, false);
         }
     },
     limits: {

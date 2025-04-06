@@ -1,12 +1,29 @@
 import express, { Request } from 'express';
 import { ChessEngine } from '../engine/chess-engine';
-import multer, { File } from 'multer';
+import multer from 'multer';
 import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
 import Agent from '../models/Agent';
 import { spawn } from 'child_process';
 import { chessEngine } from '../engine/chess-engine';
+
+// Define a compatible File type
+type MulterFile = {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+};
+
+// Define the callback types for multer
+type FileFilterCallback = (error: Error | null, acceptFile: boolean) => void;
+type FilenameCallback = (error: Error | null, filename: string) => void;
 
 const router = express.Router();
 const engine = new ChessEngine();
@@ -30,18 +47,18 @@ const drive = google.drive({ version: 'v3', auth });
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: './uploads/agents',
-  filename: (req: Request, file: File, cb: (error: Error | null, filename: string) => void) => {
+  filename: function(req, file, cb) {
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
 const upload = multer({
   storage,
-  fileFilter: (req: Request, file: File, cb: (error: Error | null, acceptFile: boolean) => void) => {
+  fileFilter: function(req, file, cb) {
     if (file.originalname.endsWith('.cpp')) {
       cb(null, true);
     } else {
-      cb(new Error('Only .cpp files are allowed'), false);
+      cb(null, false);
     }
   },
   limits: {
