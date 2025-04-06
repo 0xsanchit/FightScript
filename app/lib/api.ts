@@ -146,7 +146,7 @@ export async function createTodo(title: string) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ title, completed: false }),
+      body: JSON.stringify({ title }),
     });
     return handleResponse(response);
   } catch (error) {
@@ -157,12 +157,12 @@ export async function createTodo(title: string) {
 
 export async function updateTodo(id: string, updates: { title?: string; completed?: boolean }) {
   try {
-    const response = await fetch(`${API_BASE}/todos/${id}`, {
+    const response = await fetch(`${API_BASE}/todos`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify({ id, ...updates }),
     });
     return handleResponse(response);
   } catch (error) {
@@ -173,7 +173,7 @@ export async function updateTodo(id: string, updates: { title?: string; complete
 
 export async function deleteTodo(id: string) {
   try {
-    const response = await fetch(`${API_BASE}/todos/${id}`, {
+    const response = await fetch(`${API_BASE}/todos?id=${id}`, {
       method: 'DELETE',
     });
     return handleResponse(response);

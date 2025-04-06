@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.NODE_ENV === 'production'
   ? 'https://co3pe.onrender.com'
   : 'http://localhost:5000';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // Get the URL search params
     const { searchParams } = new URL(request.url);
