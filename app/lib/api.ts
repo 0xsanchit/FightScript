@@ -1,7 +1,7 @@
-// Use relative URLs for all API calls
-const API_BASE = '/api';
+// Use environment variable for API URL if available, otherwise use relative URL
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-console.log('Using relative API URL:', API_BASE);
+console.log('Using API URL:', API_BASE);
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
@@ -113,7 +113,7 @@ export async function uploadAgent(file: File, wallet: string) {
 export async function fetchUser(walletAddress: string) {
   try {
     console.log('Fetching user with wallet:', walletAddress);
-    const url = `${API_BASE}/users?wallet=${walletAddress}`;
+    const url = `${API_BASE}/users/${walletAddress}`;
     console.log('Request URL:', url);
     
     const response = await fetch(url, {
@@ -126,5 +126,59 @@ export async function fetchUser(walletAddress: string) {
   } catch (error) {
     console.error('Error fetching user:', error);
     throw error instanceof Error ? error : new Error('Failed to connect to server');
+  }
+}
+
+export async function fetchTodos() {
+  try {
+    const response = await fetch(`${API_BASE}/todos`);
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error fetching todos:', error);
+    throw new Error('Failed to fetch todos. Please make sure the server is running.');
+  }
+}
+
+export async function createTodo(title: string) {
+  try {
+    const response = await fetch(`${API_BASE}/todos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, completed: false }),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error creating todo:', error);
+    throw new Error('Failed to create todo. Please make sure the server is running.');
+  }
+}
+
+export async function updateTodo(id: string, updates: { title?: string; completed?: boolean }) {
+  try {
+    const response = await fetch(`${API_BASE}/todos/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error updating todo:', error);
+    throw new Error('Failed to update todo. Please make sure the server is running.');
+  }
+}
+
+export async function deleteTodo(id: string) {
+  try {
+    const response = await fetch(`${API_BASE}/todos/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error deleting todo:', error);
+    throw new Error('Failed to delete todo. Please make sure the server is running.');
   }
 } 

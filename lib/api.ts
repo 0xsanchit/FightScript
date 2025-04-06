@@ -1,4 +1,9 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://co3pe.onrender.com/api'
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+
+console.log('Environment:', process.env.NODE_ENV);
+console.log('API Base URL:', API_BASE_URL);
 
 export async function proxyRequest(path: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${path}`;

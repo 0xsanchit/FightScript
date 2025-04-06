@@ -27,7 +27,7 @@ export default function Home() {
       setIsCheckingUser(true)
       try {
         console.log('Checking user with wallet:', publicKey.toString())
-        const response = await fetch(`/api/users?wallet=${publicKey.toString()}`)
+        const response = await fetch(`/api/users/${publicKey.toString()}`)
         console.log('User check response status:', response.status)
         if (response.status === 404) {
           console.log('New user detected, showing onboarding modal')

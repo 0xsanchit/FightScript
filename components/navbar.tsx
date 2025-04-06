@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { User, Trophy } from "lucide-react"
+import { User, Trophy, ListTodo } from "lucide-react"
 import { WalletButton } from "@/app/components/WalletButton"
 import { useWallet } from "@solana/wallet-adapter-react"
 
@@ -10,6 +10,7 @@ const navigationItems = [
   { href: "/competitions", label: "Competitions" },
   { href: "/about", label: "About Us" },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/todos", label: "Todos", icon: ListTodo },
   // Remove or update any staking-related links
 ]
 
