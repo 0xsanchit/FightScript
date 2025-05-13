@@ -1,125 +1,93 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useWallet } from "@solana/wallet-adapter-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { useWallet } from "@solana/wallet-adapter-react"
-import { toast } from "sonner"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
-interface UserOnboardingModalProps {
-  isOpen: boolean
-  onClose: () => void
+export type UserOnboardingModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function UserOnboardingModal({ isOpen, onClose }: UserOnboardingModalProps) {
+export const UserOnboardingModal: React.FC<UserOnboardingModalProps> = ({ isOpen, onClose }) => {
   const { publicKey } = useWallet()
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    username: "",
-    bio: "",
-    profileImage: "", // Default empty string as per model
-  })
-
-  console.log('UserOnboardingModal rendered:', { isOpen, hasPublicKey: !!publicKey })
+  const [username, setUsername] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!publicKey) {
-      console.log('No public key found')
-      toast.error("Please connect your wallet first")
-      return
-    }
+    if (!publicKey) return
 
-    if (!formData.username.trim()) {
-      console.log('Username is empty')
-      toast.error("Username is required")
-      return
-    }
+    setLoading(true)
+    setError(null)
 
-    if (!formData.bio.trim()) {
-      console.log('Bio is empty')
-      toast.error("Bio is required")
-      return
-    }
-
-    setIsLoading(true)
     try {
-      console.log('Submitting user data:', { ...formData, walletAddress: publicKey.toString() })
-      const response = await fetch("/api/users", {
+      const response = await fetch("https://fightscript.onrender.com/api/users/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           walletAddress: publicKey.toString(),
-          username: formData.username.trim(),
-          bio: formData.bio.trim(),
-          profileImage: formData.profileImage,
+          username,
+          profileImage: "", // Default empty profile image
+          bio: "", // Default empty bio
           role: "user",
           stats: {
             totalAgents: 0,
             competitionsWon: 0,
             tokensEarned: 0,
-            winRate: 0
+            winRate: 0,
           },
-          totalEarnings: 0
+          totalEarnings: 0,
         }),
       })
 
-      console.log('User creation response status:', response.status)
       if (!response.ok) {
-        const error = await response.json()
-        console.error('User creation error:', error)
-        throw new Error(error.message || "Failed to create user")
+        throw new Error('Failed to create user')
       }
 
-      console.log('User created successfully')
-      toast.success("Profile created successfully!")
       onClose()
-    } catch (error) {
-      console.error("Error creating user:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to create profile. Please try again.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Complete Your Profile</DialogTitle>
+          <DialogTitle>Welcome to CO3PE!</DialogTitle>
+          <DialogDescription>
+            Please create your account to get started.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
-              Username
-            </label>
+            <Label htmlFor="username">Username</Label>
             <Input
               id="username"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              placeholder="Choose a unique username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
               required
             />
           </div>
-          <div className="space-y-2">
-            <label htmlFor="bio" className="text-sm font-medium">
-              Bio
-            </label>
-            <Textarea
-              id="bio"
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              placeholder="Tell us about yourself"
-              maxLength={500}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating Profile..." : "Create Profile"}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <Button type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create Account"}
           </Button>
         </form>
       </DialogContent>

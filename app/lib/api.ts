@@ -38,16 +38,18 @@ export async function proxyRequest(path: string, options: RequestInit = {}) {
 export async function fetchUserStats(walletAddress: string) {
   try {
     console.log('Fetching user stats with wallet:', walletAddress);
-    const url = `${API_BASE}/users/${walletAddress}/stats`;
-    console.log('Request URL:', url);
-    
-    const response = await fetch(url, {
+    const response = await fetch(`/api/users/${walletAddress}/stats`, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
     
-    return handleResponse(response);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch user stats');
+    }
+    
+    return response.json();
   } catch (error) {
     console.error('Error fetching user stats:', error);
     throw error instanceof Error ? error : new Error('Failed to fetch user stats');
@@ -113,19 +115,21 @@ export async function uploadAgent(file: File, wallet: string) {
 export async function fetchUser(walletAddress: string) {
   try {
     console.log('Fetching user with wallet:', walletAddress);
-    const url = `${API_BASE}/users/${walletAddress}`;
-    console.log('Request URL:', url);
-    
-    const response = await fetch(url, {
+    const response = await fetch(`/api/users/${walletAddress}`, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
     
-    return handleResponse(response);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch user');
+    }
+    
+    return response.json();
   } catch (error) {
     console.error('Error fetching user:', error);
-    throw error instanceof Error ? error : new Error('Failed to connect to server');
+    throw error instanceof Error ? error : new Error('Failed to fetch user');
   }
 }
 

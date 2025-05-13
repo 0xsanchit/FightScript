@@ -1,0 +1,4 @@
+*.exe binary
+*.exe -text -diff -merge
+server/src/engine/agents/*.exe binary
+server/src/engine/agents/*.exe -text -diff -merge

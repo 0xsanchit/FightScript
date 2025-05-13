@@ -34,22 +34,57 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
+  fileFilter: (req, file, cb) => {
+    // Only allow .cpp files
+    if (!file.originalname.endsWith('.cpp')) {
+      console.error('Invalid file type:', file.originalname);
+      cb(null, false);
+      return;
+    }
+    cb(null, true);
+  },
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
 // Google Drive API setup
-const keyFilePath = path.join(process.cwd(), '..', 'public', 'co3pe-453808-0e053faf0259.json');
-console.log('Google Drive key file path:', keyFilePath);
+const credentials = {
+  type: process.env.GOOGLE_DRIVE_TYPE,
+  project_id: process.env.GOOGLE_DRIVE_PROJECT_ID,
+  private_key_id: process.env.GOOGLE_DRIVE_PRIVATE_KEY_ID,
+  private_key: process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  client_email: process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
+  client_id: process.env.GOOGLE_DRIVE_CLIENT_ID,
+  auth_uri: process.env.GOOGLE_DRIVE_AUTH_URI,
+  token_uri: process.env.GOOGLE_DRIVE_TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.GOOGLE_DRIVE_AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.GOOGLE_DRIVE_CLIENT_CERT_URL
+};
 
-if (!fs.existsSync(keyFilePath)) {
-  console.error('Google Drive credentials file not found at:', keyFilePath);
-  throw new Error('Google Drive credentials file not found');
+// Validate required credentials
+const requiredCredentials = [
+  'GOOGLE_DRIVE_TYPE',
+  'GOOGLE_DRIVE_PROJECT_ID',
+  'GOOGLE_DRIVE_PRIVATE_KEY',
+  'GOOGLE_DRIVE_CLIENT_EMAIL',
+  'GOOGLE_DRIVE_CLIENT_ID'
+];
+
+const missingCredentials = requiredCredentials.filter(key => !process.env[key]);
+
+if (missingCredentials.length > 0) {
+  const errorMessage = `Missing required Google Drive credentials: ${missingCredentials.join(', ')}. Please ensure all required environment variables are set.`;
+  console.error(errorMessage);
+  console.error('Current environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PWD: process.cwd(),
+  });
+  throw new Error(errorMessage);
 }
 
 const auth = new GoogleAuth({
-  keyFile: keyFilePath,
+  credentials,
   scopes: ['https://www.googleapis.com/auth/drive.file']
 });
 
@@ -71,6 +106,11 @@ router.post("/agent", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
+  if (!req.body.wallet) {
+    console.log('No wallet address provided');
+    return res.status(400).json({ error: "Wallet address is required" });
+  }
+
   try {
     // Verify file exists after upload
     if (!fs.existsSync(req.file.path)) {
@@ -79,33 +119,52 @@ router.post("/agent", upload.single("file"), async (req, res) => {
 
     console.log('File saved successfully at:', req.file.path);
 
+    // Upload to Google Drive
+    let driveResponse;
+    try {
+      driveResponse = await drive.files.create({
+        requestBody: {
+          name: req.file.filename,
+          mimeType: 'text/x-c++src',
+        },
+        media: {
+          mimeType: 'text/x-c++src',
+          body: fs.createReadStream(req.file.path),
+        },
+      });
+      console.log('File uploaded to Google Drive:', driveResponse.data);
+    } catch (error) {
+      const driveError = error as Error;
+      console.error('Google Drive upload failed:', driveError);
+      throw new Error(`Google Drive upload failed: ${driveError.message}`);
+    }
+
     // Get the file ID from the filename (without extension)
     const fileId = path.basename(req.file.filename, '.cpp');
     console.log('Generated fileId:', fileId);
+
+    // Clean up the local file
+    try {
+      fs.unlinkSync(req.file.path);
+      console.log('Local file cleaned up');
+    } catch (cleanupError) {
+      console.error('Failed to clean up local file:', cleanupError);
+      // Continue even if cleanup fails
+    }
 
     // Return the file information
     res.json({
       success: true,
       fileId,
+      driveFileId: driveResponse.data.id,
       message: 'File uploaded successfully',
-      path: req.file.path
+      name: req.file.originalname
     });
-  } catch (error: any) {
-    console.error('Upload error:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
-    });
-
-    // Clean up the file in case of error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
-    res.status(500).json({ 
-      error: 'Upload failed',
-      details: error.message,
-      code: error.code
+  } catch (error) {
+    console.error('Error processing upload:', error);
+    res.status(500).json({
+      error: 'Failed to process upload',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
