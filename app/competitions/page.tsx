@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import CompetitionsNavbar from "@/components/competitions-navbar"
 import Footer from "@/components/footer"
+import { Navbar } from "@/components/navbar"
 
 const competitions = [
   {
@@ -24,7 +25,7 @@ const competitions = [
 export default function CompetitionsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <CompetitionsNavbar />
+      <Navbar />
       <main className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-8 text-center">Active Competitions</h1>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

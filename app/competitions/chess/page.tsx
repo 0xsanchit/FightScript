@@ -269,7 +269,7 @@ export default function ChessCompetition() {
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('https://fightscript.onrender.com/api/chess/leaderboard');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chess/leaderboard`);
       if (!response.ok) {
         throw new Error('Failed to fetch leaderboard');
       }
@@ -336,7 +336,7 @@ export default function ChessCompetition() {
       console.log('Uploading file:', uploadState.file.name);
 
       // Use the direct backend URL
-      const uploadResponse = await fetch('https://fightscript.onrender.com/api/upload/agent', {
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/agent`, {
         method: 'POST',
         body: formData,
       });
@@ -355,7 +355,7 @@ export default function ChessCompetition() {
       });
 
       // Use the direct backend URL for match creation
-      const matchResponse = await fetch('https://fightscript.onrender.com/api/chess/match', {
+      const matchResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chess/match`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -383,7 +383,7 @@ export default function ChessCompetition() {
           console.log(`Polling match status (attempt ${pollCount + 1}/${maxPolls})`);
           
           // Use the direct backend URL
-          const resultResponse = await fetch(`https://fightscript.onrender.com/api/chess/match?matchId=${matchData.matchId}`);
+          const resultResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chess/match?matchId=${matchData.matchId}`);
           
           if (!resultResponse.ok) {
             const errorData = await resultResponse.json();

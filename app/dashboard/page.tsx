@@ -150,8 +150,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-auto mx-auto">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center space-x-4 mb-8">

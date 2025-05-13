@@ -27,7 +27,7 @@ export default function LeaderboardPage() {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true)
-      const response = await fetch('https://fightscript.onrender.com/api/chess/leaderboard')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chess/leaderboard`)
       if (!response.ok) {
         throw new Error('Failed to fetch leaderboard')
       }
