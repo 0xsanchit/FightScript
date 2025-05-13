@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
         <div className="container mx-auto py-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Global Leaderboard</h2>
+              <h2 className="text-2xl font-bold text-gray-950">Global Leaderboard</h2>
               <button
                 onClick={fetchLeaderboard}
                 className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors"
