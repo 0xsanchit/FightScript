@@ -11,7 +11,7 @@ import { Icon } from "@radix-ui/react-select"
 const navigationItems = [
   { href: "/competitions", label: "Competitions" ,icon: FileTerminalIcon},
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "https://0xmuon.github.io/co3pe-docs/", label: "Docs", icon:GraduationCapIcon},
+  { href: "/docs", label: "Docs", icon:GraduationCapIcon},
   { href: "/about", label: "About Us", icon: InfoIcon }
   // Remove or update any staking-related links
 ]

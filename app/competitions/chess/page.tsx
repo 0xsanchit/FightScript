@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { startMatch, fetchUserStats, fetchUser } from '../../lib/api'
 import { LoadingState } from "@/components/ui/loading-state"
 import Footer from "@/components/footer"
-import LeaderboardComponent from "@/components/leaderboard"
 
 const leaderboardData = [
   { rank: 1, name: "AlphaChess", wins: 150, losses: 20 },
@@ -730,7 +729,6 @@ export default function ChessCompetition() {
             <MatchResultDisplay {...matchStatus} />
           </div>
         </div>
-        <LeaderboardComponent/>
       </main>
       <Footer />
       </div>

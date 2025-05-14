@@ -9,7 +9,8 @@
   "dependencies": {
     "@solana/spl-token": "^0.3.9",
     "@solana/web3.js": "^1.87.6",
+    "co3pe-scripts": "file:",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
-} 
+}
