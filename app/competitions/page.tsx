@@ -73,10 +73,10 @@ export default function CompetitionsPage() {
             {competitions.map((competition) => (
               <div
                 key={competition.name}
-                className="bg-[#1E1F2F] hover:bg-[#2A2B3C] border border-[#2E2F40] rounded-2xl shadow-lg p-6 flex flex-col transition duration-300"
+                className="bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-[#2A2B3C] border border-[#2E2F40] rounded-2xl shadow-lg p-6 border-2 border-solid border-cyan-700 flex flex-col transition duration-300"
               >
                 <div className="flex-grow">
-                  <h2 className="text-2xl font-semibold mb-4 text-[#E0E0FF] flex items-center">
+                  <h2 className="text-2xl font-bold mb-4 text-[#E0E0FF] flex items-center">
       {getIcon(competition.name)}
       {competition.name}
     </h2>
@@ -91,7 +91,7 @@ export default function CompetitionsPage() {
                       Coming Soon
                     </button>
                   ) : (
-                    <Button asChild className="bg-[#008C8B] hover:bg-[#00B2DA] text-black px-4 py-2 rounded-lg">
+                    <Button asChild className="bg-[#1E1F2F] hover:bg-[#00B2DA] text-cyan-700 border-2 border-solid border-cyan-700 px-4 py-2 shadow-md shadow-cyan-500/50 rounded-lg">
                       <Link href={competition.arenaLink}>{competition.status}</Link>
                     </Button>
                   )}
