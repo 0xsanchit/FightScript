@@ -54,7 +54,7 @@ export function UserOnboarding() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-6">
-        <h1 className="text-3xl font-bold text-center mb-8">Welcome to CO3PE!</h1>
+        <h1 className="text-3xl font-bold text-center mb-8">Welcome to FightScript</h1>
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}

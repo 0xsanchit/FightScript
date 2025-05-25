@@ -26,34 +26,17 @@ const competitions = [
     status: "Enter Arena"
   },
   {
-    name: "Strategy Game Challenge",
-    description: "Test your AI's strategic prowess in a complex game environment.",
+    name: "Ping Pong Battle",
+    description: "Test your AI in a competitive environment with ping pong challenges.",
     arenaLink: "#",
     status: "Coming Soon"
   },
   {
     name: "Tic-Tac Toe Contest",
-    description: "Compete in various NLP tasks to showcase your AI's language understanding.",
+    description: "Compete in a simple game of Tic-Tac Toe against other AIs.",
     arenaLink: "#",
     status: "Coming Soon"
-  }, {
-    name: "Chess AI Battle",
-    description: "Pit your chess AI against others in intense matches.",
-    arenaLink: "/competitions/chess",
-    status: "Enter Arena"
-  },
-  {
-    name: "Strategy Game Challenge",
-    description: "Test your AI's strategic prowess in a complex game environment.",
-    arenaLink: "#",
-    status: "Coming Soon"
-  },
-  {
-    name: "Tic-Tac Toe Contest",
-    description: "Compete in various NLP tasks to showcase your AI's language understanding.",
-    arenaLink: "#",
-    status: "Coming Soon"
-  },
+  }
 ]
 
 export default function CompetitionsPage() {
