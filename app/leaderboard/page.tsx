@@ -116,7 +116,7 @@ const sortedAgents = [...agents].sort((a, b) => {
   if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
   return 0;
 });
-const handleSort = (column:string) => {
+const handleSort = (column: SortColumn) => {
   if (sortColumn === column) {
     setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
   } else {
@@ -170,7 +170,7 @@ const handleSort = (column:string) => {
     ].map(({ key, label }) => (
       <th
         key={key}
-        onClick={() => handleSort(key)}
+        onClick={() => handleSort(key as SortColumn)}
         className="px-6 py-3 text-center text-xs font-medium text-black uppercase tracking-wider cursor-pointer hover:underline"
       >
         {label}
