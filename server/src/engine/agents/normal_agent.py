@@ -89,7 +89,6 @@ class ChessAgent():
         }
 
     def make_move(self, board: chess.Board, time_limit: Optional[float] = None) -> chess.Move:
-        print("Making move")
         """Select the best move using iterative deepening with time management."""
         start_time = time.time()
         best_move = None
@@ -280,19 +279,3 @@ class ChessAgent():
         
         return white_score - black_score
 
-def save_agent(agent, filename: str):
-    """Save the agent to a file using pickle."""
-    import pickle
-    with open(filename, 'wb') as f:
-        pickle.dump(agent, f)
-
-def load_agent(filename: str):
-    """Load an agent from a file."""
-    import pickle
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
-
-if __name__ == "__main__":
-    # Create and save an advanced agent
-    agent = ChessAgent(depth=3)
-    save_agent(agent, "advanced_agent.pkl")

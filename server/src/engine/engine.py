@@ -2,13 +2,13 @@ import chess
 import chess.pgn
 import time
 from typing import Optional, Tuple
-from agent import ChessAgent, load_agent
+import importlib
 import io
 import sys
 import os
 
 class ChessMatch:
-    def __init__(self, agent1: ChessAgent, agent2: ChessAgent, time_limit_per_move: float = 5.0):
+    def __init__(self, agent1, agent2, time_limit_per_move: float = 5.0):
         self.agent1 = agent1
         self.agent2 = agent2
         self.time_limit_per_move = time_limit_per_move
@@ -58,8 +58,8 @@ class ChessMatch:
 def run_match(agent1_file: str, agent2_file: str, time_limit: float = 5.0) -> Tuple[str, str]:
     """Run a match between two agents loaded from files."""
     try:
-        agent1 = load_agent(agent1_file)
-        agent2 = load_agent(agent2_file)
+        agent1 = importlib.import_module(agent1_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
+        agent2 = importlib.import_module(agent2_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
     except Exception as e:
         return f"Error loading agents: {e}", ""
     
