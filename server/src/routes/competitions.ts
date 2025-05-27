@@ -43,20 +43,20 @@ router.get("/", async (req, res) => {
 });
 
 // Get engine status and info
-router.get('/chess/status', async (req, res) => {
-  try {
-    const status = await engine.getEngineInfo();
-    res.json(status);
-  } catch (error) {
-    console.error('Engine status error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get engine status',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
-  } finally {
-    engine.cleanup();
-  }
-});
+// router.get('/chess/status', async (req, res) => {
+//   try {
+//     // const status = await engine.getEngineInfo();
+//     res.json(status);
+//   } catch (error) {
+//     console.error('Engine status error:', error);
+//     res.status(500).json({ 
+//       error: 'Failed to get engine status',
+//       details: error instanceof Error ? error.message : 'Unknown error'
+//     });
+//   } finally {
+//     engine.cleanup();
+//   }
+// });
 
 // Get available agents for a user
 router.get('/chess/agents/:wallet', async (req, res) => {
@@ -132,7 +132,7 @@ router.post('/match', async (req, res) => {
     // Initialize the engine
     try {
       console.log('Initializing chess engine...');
-      await engine.initialize();
+      // await engine.initialize();
       console.log('Chess engine initialized successfully');
       
       // Update match status to running

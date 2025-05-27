@@ -99,19 +99,19 @@ const upload = multer({
 });
 
 // Add path to Stockfish executable - adjust this path based on your system
-const STOCKFISH_PATH = process.platform === 'win32' 
-  ? path.join(process.cwd(), 'src/engine/stockfish/stockfish.exe')  // Windows
-  : path.join(process.cwd(), 'src/engine/stockfish/stockfish');     // Linux/Mac
+// const STOCKFISH_PATH = process.platform === 'win32' 
+//   ? path.join(process.cwd(), 'src/engine/stockfish/stockfish.exe')  // Windows
+//   : path.join(process.cwd(), 'src/engine/stockfish/stockfish');     // Linux/Mac
 
 // Get engine status
-router.get('/status', async (req, res) => {
-  try {
-    const status = await engine.getEngineInfo();
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get engine status' });
-  }
-});
+// router.get('/status', async (req, res) => {
+//   try {
+//     const status = await engine.getEngineInfo();
+//     res.json(status);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to get engine status' });
+//   }
+// });
 
 // Upload agent
 router.post('/upload', upload.single('file'), async (req, res) => {
@@ -303,8 +303,8 @@ router.post('/match', async (req, res) => {
     console.log('Match initialized with ID:', matchId);
 
     // Get the full paths for the agents
-    const userAgentPath = path.join(process.cwd(), 'uploads', 'agents', `${fileId}.cpp`);
-    const aggressiveBotPath = path.join(process.cwd(), 'src', 'engine', 'agents', 'aggressive_bot.cpp');
+    const userAgentPath = path.join(process.cwd(), 'uploads', 'agents', `${fileId}`);
+    const aggressiveBotPath = path.join(process.cwd(), 'src', 'engine', 'agents', 'random_agent.py');
 
     console.log('Checking file paths:');
     console.log('User agent path:', userAgentPath);
@@ -328,7 +328,7 @@ router.post('/match', async (req, res) => {
     // Initialize the engine
     try {
       console.log('Initializing chess engine...');
-      await chessEngine.initialize();
+      // await chessEngine.initialize();
       console.log('Chess engine initialized successfully');
       
       // Update match status to running

@@ -24,9 +24,9 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate a unique filename with .cpp extension
+    // Generate a unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = `${uniqueSuffix}.cpp`;
+    const filename = `${uniqueSuffix}${file.originalname}`;
     console.log('Generated filename:', filename);
     cb(null, filename);
   }
@@ -36,7 +36,7 @@ const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     // Only allow .cpp files
-    if (!file.originalname.endsWith('.cpp')) {
+    if (!file.originalname.endsWith('.py')) {
       console.error('Invalid file type:', file.originalname);
       cb(null, false);
       return;
@@ -119,44 +119,23 @@ router.post("/agent", upload.single("file"), async (req, res) => {
 
     console.log('File saved successfully at:', req.file.path);
 
-    // Upload to Google Drive
-    let driveResponse;
-    try {
-      driveResponse = await drive.files.create({
-        requestBody: {
-          name: req.file.filename,
-          mimeType: 'text/x-c++src',
-        },
-        media: {
-          mimeType: 'text/x-c++src',
-          body: fs.createReadStream(req.file.path),
-        },
-      });
-      console.log('File uploaded to Google Drive:', driveResponse.data);
-    } catch (error) {
-      const driveError = error as Error;
-      console.error('Google Drive upload failed:', driveError);
-      throw new Error(`Google Drive upload failed: ${driveError.message}`);
-    }
-
     // Get the file ID from the filename (without extension)
-    const fileId = path.basename(req.file.filename, '.cpp');
-    console.log('Generated fileId:', fileId);
+    // const fileId = path.basename(req.file.filename, '.cpp');
+    // console.log('Generated fileId:', fileId);
 
     // Clean up the local file
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log('Local file cleaned up');
-    } catch (cleanupError) {
-      console.error('Failed to clean up local file:', cleanupError);
-      // Continue even if cleanup fails
-    }
+    // try {
+    //   fs.unlinkSync(req.file.path);
+    //   console.log('Local file cleaned up');
+    // } catch (cleanupError) {
+    //   console.error('Failed to clean up local file:', cleanupError);
+    //   // Continue even if cleanup fails
+    // }
 
     // Return the file information
     res.json({
       success: true,
-      fileId,
-      driveFileId: driveResponse.data.id,
+      fileId: req.file.filename,
       message: 'File uploaded successfully',
       name: req.file.originalname
     });

@@ -299,8 +299,8 @@ export default function ChessCompetition() {
       return;
     }
 
-    if (!file.name.endsWith('.cpp')) {
-      setUploadState(prev => ({ ...prev, error: 'Only C++ (.cpp) files are allowed' }));
+    if (!file.name.endsWith('.py')) {
+      setUploadState(prev => ({ ...prev, error: 'Only Python (.py) files are allowed' }));
       return;
     }
 
@@ -627,14 +627,14 @@ export default function ChessCompetition() {
                           <input
                             type="file"
                             className="sr-only"
-                            accept=".cpp"
+                            accept=".py"
                             onChange={handleFileChange}
                           />
                         </label>
                         <p className="pl-1 text-black">or drag and drop</p>
                       </div>
                       <p className="text-xs text-black">
-                        C++ files only (.cpp)
+                        Python files only (.py)
                       </p>
                     </div>
                   </div>

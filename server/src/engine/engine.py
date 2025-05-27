@@ -49,17 +49,28 @@ class ChessMatch:
                 if game_over:
                     self.game.headers["Result"] = self.board.result()
                     return self.board.result(), self.game
+            
     
     def get_pgn(self) -> str:
         """Return the PGN string of the current game."""
         exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True)
         return self.game.accept(exporter)
 
+def load_agent(file_path) :
+    spec = importlib.util.spec_from_file_location("temp_module", file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ChessAgent()
+
 def run_match(agent1_file: str, agent2_file: str, time_limit: float = 5.0) -> Tuple[str, str]:
     """Run a match between two agents loaded from files."""
     try:
-        agent1 = importlib.import_module(agent1_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
-        agent2 = importlib.import_module(agent2_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
+        agent1 = load_agent(agent1_file)
+        agent2 = load_agent(agent2_file)
+        # print(agent1_file)
+        # print(agent2_file)
+        # agent1 = importlib.import_module(agent1_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
+        # agent2 = importlib.import_module(agent2_file.strip("/").strip("\\").replace("/", ".").replace("\\", ".")).ChessAgent()
     except Exception as e:
         return f"Error loading agents: {e}", ""
     
@@ -80,6 +91,7 @@ if __name__ == "__main__":
     
     result, pgn = run_match(agent1_file, agent2_file)
     print(result)
+    print(pgn)
     # if result == "1/2-1/2" :
     #     return 1
     # elif result == "1-0" :
