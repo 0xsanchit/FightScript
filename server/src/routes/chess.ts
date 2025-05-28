@@ -355,7 +355,7 @@ router.post('/match', async (req, res) => {
           points = 2;
         } else if (result.winner === 2) {
           updatedMatch.status = 'completed';
-          updatedMatch.winner = 'bot';
+          updatedMatch.winner = 'opponent';
           updatedMatch.message = 'Match completed. The aggressive bot won. (+0 points)';
           points = 0;
         } else {
@@ -385,7 +385,8 @@ router.post('/match', async (req, res) => {
                 points: points
               },
               $setOnInsert: {
-                name: 'Anonymous',
+                fileId: userAgentPath,
+                name: walletAddress,
                 status: 'active',
                 createdAt: new Date()
               }

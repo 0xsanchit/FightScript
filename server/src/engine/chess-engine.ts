@@ -77,23 +77,23 @@ export class ChessEngine {
   
           // Parse the result - adjust this based on your Python script's output format
           // Example assumes format like "winner:1,reason:checkmate" or similar
-          let winner = 0;
+          let winner = parseInt(result);
           let reason = 'Unknown';
           let moves: string[] = [];
   
           // You'll need to adjust this parsing based on your actual Python output format
-          if (result.includes('winner')) {
-            // Example parsing - modify based on your actual format
-            const parts = result.split(',');
-            for (const part of parts) {
-              const [key, value] = part.split(':');
-              if (key === 'winner') {
-                winner = parseInt(value) || 0;
-              } else if (key === 'reason') {
-                reason = value || 'Unknown';
-              }
-            }
-          }
+          // if (result.includes('winner')) {
+          //   // Example parsing - modify based on your actual format
+          //   const parts = result.split(',');
+          //   for (const part of parts) {
+          //     const [key, value] = part.split(':');
+          //     if (key === 'winner') {
+          //       winner = parseInt(value) || 0;
+          //     } else if (key === 'reason') {
+          //       reason = value || 'Unknown';
+          //     }
+          //   }
+          // }
   
           // Extract moves from PGN if needed
           // This is a simple example - you might need more sophisticated PGN parsing
@@ -106,12 +106,12 @@ export class ChessEngine {
               });
             }
           }
-  
+          
           resolve({
             winner,
             reason,
             moves,
-            engineOutput: output
+            engineOutput: ""
           });
   
         } catch (error) {

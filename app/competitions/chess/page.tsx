@@ -69,6 +69,8 @@ interface MatchStatus {
 }
 
 const MatchResultDisplay = ({ status, result, engineOutput, message }: MatchStatus) => {
+  console.log(result)
+
   if (status === 'idle') return null;
 
   // Parse Stockfish output to extract key information
@@ -117,12 +119,12 @@ const MatchResultDisplay = ({ status, result, engineOutput, message }: MatchStat
           <div className="flex items-center space-x-2">
             <span className="font-medium">Result:</span>
             <span className={`px-2 py-1 rounded text-sm ${
-              result.winner === 1 ? 'bg-green-100 text-green-800' :
-              result.winner === 2 ? 'bg-red-100 text-red-800' :
+              result.winner === 'user' ? 'bg-green-100 text-green-800' :
+              result.winner === 'opponent' ? 'bg-red-100 text-red-800' :
               'bg-yellow-100 text-yellow-800'
             }`}>
-              {result.winner === 1 ? 'You Won!' : 
-               result.winner === 2 ? 'Bot Won' : 
+              {result.winner === 'user' ? 'You Won!' : 
+               result.winner === 'opponent' ? 'Opponent Won' : 
                'Draw'}
             </span>
           </div>
@@ -223,7 +225,7 @@ const MatchResultDisplay = ({ status, result, engineOutput, message }: MatchStat
 };
 
 export default function ChessCompetition() {
-  const { publicKey } = useWallet();
+  const { publicKey ,connected} = useWallet();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [engineStatus, setEngineStatus] = useState("Loading engine status...");
@@ -265,7 +267,7 @@ export default function ChessCompetition() {
     } else {
       setIsLoading(false);
     }
-  }, [publicKey, fetchUserData]);
+  }, [publicKey, fetchUserData,connected]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -601,7 +603,7 @@ export default function ChessCompetition() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Agent File (.cpp)
+                Upload Agent File (.py)
               </label>
               <div className="flex items-center space-x-4">
                 <div className="flex-1">

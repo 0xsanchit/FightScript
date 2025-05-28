@@ -6,6 +6,7 @@ import importlib
 import io
 import sys
 import os
+import copy
 
 class ChessMatch:
     def __init__(self, agent1, agent2, time_limit_per_move: float = 5.0):
@@ -26,7 +27,8 @@ class ChessMatch:
         current_agent = self.agent1 if self.board.turn == chess.WHITE else self.agent2
         
         try:
-            move = current_agent.make_move(self.board, self.time_limit_per_move)
+            board_copy = self.board.copy()
+            move = current_agent.make_move(board_copy, self.time_limit_per_move)
             if move is None:
                 return True, "illegal move"
             
@@ -53,7 +55,7 @@ class ChessMatch:
     
     def get_pgn(self) -> str:
         """Return the PGN string of the current game."""
-        exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True)
+        exporter = chess.pgn.StringExporter(headers=False, variations=True, comments=True)
         return self.game.accept(exporter)
 
 def load_agent(file_path) :
@@ -90,11 +92,11 @@ if __name__ == "__main__":
     agent2_file = sys.argv[2]
     
     result, pgn = run_match(agent1_file, agent2_file)
-    print(result)
+    if result == "1/2-1/2" :
+        print(0)
+    elif result == "1-0" :
+        print(1)
+    elif result == "0-1" :
+        print(2)
     print(pgn)
-    # if result == "1/2-1/2" :
-    #     return 1
-    # elif result == "1-0" :
-    #     return 2
-    # elif result == "0-1" :
-    #     return 0
+

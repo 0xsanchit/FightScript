@@ -7,7 +7,7 @@ import sys
 import os
 
 class ChessAgent():
-    def __init__(self, depth: int = 3, name: str = "AdvancedAgent"):
+    def __init__(self, depth: int = 2, name: str = "AdvancedAgent"):
         super().__init__
         self.name = name
         self.depth = depth  # Search depth for minimax
