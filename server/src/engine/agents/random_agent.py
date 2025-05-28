@@ -1,7 +1,5 @@
 import chess
 from typing import Optional
-import os 
-import pickle
 import random
 
 class ChessAgent:
@@ -10,7 +8,7 @@ class ChessAgent:
         # Initialize default parameters 
         pass
 
-    def make_move(self, board: chess.Board, time_limit: Optional[float] = None) -> chess.Move:
+    def make_move(self, board: chess.Board, time_limit: float) -> chess.Move:
         """
         Make a move based on the current board state.
         Handles timeouts and returns None if no move can be made.

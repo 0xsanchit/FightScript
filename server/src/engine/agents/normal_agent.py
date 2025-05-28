@@ -88,7 +88,7 @@ class ChessAgent():
             ]
         }
 
-    def make_move(self, board: chess.Board, time_limit: Optional[float] = None) -> chess.Move:
+    def make_move(self, board: chess.Board, time_limit: float) -> chess.Move:
         """Select the best move using iterative deepening with time management."""
         start_time = time.time()
         best_move = None

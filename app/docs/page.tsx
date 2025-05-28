@@ -69,109 +69,60 @@ export default function DocPage() {
                   <section>
                     <h2 className="text-2xl font-semibold mb-2">✅ What You Need</h2>
                     <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>A working C++ environment (<code>g++</code> recommended)</li>
-                      <li>Basic knowledge of the UCI (Universal Chess Interface)</li>
-                      <li>Your bot should:
-                        <ul className="list-disc list-inside ml-6">
-                          <li>Read input via <code>std::cin</code></li>
-                          <li>Output moves via <code>std::cout</code></li>
-                          <li>Handle standard UCI commands</li>
-                        </ul>
+                      <li>Just Enthusiasm :)
+
                       </li>
+                      
                     </ul>
-                    <p className="mt-2 text-gray-400">
-                      Your final upload must be a compiled Linux binary (<code>your_bot</code>), not the source <code>.cpp</code> file.
-                    </p>
                   </section>
 
                   {/* Sample Code */}
                   <section>
-                    <h2 className="text-2xl font-semibold mb-2">💻 Sample C++ Bot Code</h2>
+                    <h2 className="text-2xl font-semibold mb-2">💻 Sample Bot Code</h2>
                     <p className="text-gray-300 mb-4">
-                      This example bot picks a basic move depending on the color and follows the UCI protocol strictly:
+                      This example bot picks a basic random move:
                     </p>
                     <pre className="bg-gray-800 p-4 rounded overflow-x-auto text-sm">
                       <SyntaxHighlighter language="cpp" style={vscDarkPlus} wrapLines={true}>
-                        {`#include <iostream>
-#include <string>
-#include <vector>
-#include <random>
-#include <chrono>
+                        {`import chess
+from typing import Optional
+import random
 
-std::string get_move(const std::string& fen) {
-    bool is_white = fen.find(" w ") != std::string::npos;
-    std::vector<std::string> moves;
+class ChessAgent:
+    def __init__(self):
+        self.name = "Agent"
+        # Initialize default parameters 
+        pass
 
-    if (is_white) {
-        moves = {"e2e4", "d2d4", "g1f3", "b1c3", "f1c4", "f1b5"};
-    } else {
-        moves = {"e7e5", "d7d5", "g8f6", "b8c6", "f8c5", "f8b4"};
-    }
-
-    auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937 gen(seed);
-    std::uniform_int_distribution<> dis(0, moves.size() - 1);
-
-    return moves[dis(gen)];
-}
-
-int main() {
-    std::string line;
-    std::string current_fen;
-
-    while (std::getline(std::cin, line)) {
-        if (line == "uci") {
-            std::cout << "id name MyBot\\n";
-            std::cout << "id author Your Name\\n";
-            std::cout << "uciok\\n";
-        } else if (line == "isready") {
-            std::cout << "readyok\\n";
-        } else if (line.rfind("position", 0) == 0) {
-            size_t fenIndex = line.find("fen ");
-            if (fenIndex != std::string::npos) {
-                current_fen = line.substr(fenIndex + 4);
-            }
-        } else if (line == "go") {
-            std::string move = get_move(current_fen);
-            std::cout << "bestmove " << move << "\\n";
-        } else if (line == "quit") {
-            break;
-        }
-    }
-
-    return 0;
-}`}
+    def make_move(self, board: chess.Board, time_limit: float) -> chess.Move:
+        """
+        Make a move based on the current board state.
+        Handles timeouts and returns None if no move can be made.
+        """
+        legal_moves = list(board.legal_moves)
+        if not legal_moves:
+            return None
+        return random.choice(legal_moves)`}
                       </SyntaxHighlighter>
                     </pre>
                   </section>
 
                   {/* Compilation Instructions */}
                   <section>
-                    <h2 className="text-2xl font-semibold mb-2">⚙️ How to Compile (on your local machine)</h2>
+                    <h2 className="text-2xl font-semibold mb-2">⚙️ How to Compile </h2>
                     <p className="text-gray-300 mb-2">
-                      Use this command to generate an executable Linux-compatible binary:
+                      No compilation needed
                     </p>
-                    <pre className="bg-gray-800 p-4 rounded overflow-x-auto text-sm">
-                      <code>g++ -std=c++17 your_bot.cpp -o your_bot</code>
-                    </pre>
-                    <p className="text-gray-300 mt-2">
-                      Make sure the compiled binary:
-                    </p>
-                    <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>Has no platform dependencies (compile on Linux or WSL for best compatibility)</li>
-                      <li>Is tested locally before upload: <code>./your_bot</code> and type in UCI commands</li>
-                      <li>Has execution permissions: <code>chmod +x your_bot</code></li>
-                    </ul>
+                    
                   </section>
 
                   {/* Uploading the Bot */}
                   <section>
-                    <h2 className="text-2xl font-semibold mb-2">📤 Uploading Your Bot</h2>
+                    <h2 className="text-2xl font-semibold mb-2">📤 Creating Your own Bot</h2>
                     <ol className="list-decimal list-inside text-gray-300 space-y-1">
-                      <li>Rename it meaningfully, e.g., <code>my_bot</code></li>
-                      <li>Upload it using the Upload Bot button on the site</li>
-                      <li>The server downloads it from Google Drive</li>
-                      <li>It’s executed inside a secure environment alongside Stockfish</li>
+                      <li>Your bot should implement a class ChessAgent which has a function play move</li>
+                      <li>Please ensure the time limit per move and all dependencies should be in the same file</li>
+                      <li>Just upload this python file using the Upload Bot button on the site</li>
                     </ol>
                   </section>
 
@@ -179,17 +130,10 @@ int main() {
                   <section>
                     <h2 className="text-2xl font-semibold mb-2">🎮 Match Flow</h2>
                     <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>Your bot is treated like a UCI engine</li>
-                      <li>Stockfish sends standard <code>uci</code>, <code>isready</code>, <code>position</code>, <code>go</code> commands</li>
-                      <li>Your bot replies with <code>bestmove XYZ</code></li>
-                      <li>The game ends when one side wins or it's a draw</li>
-                      <li>You'll get:
-                        <ul className="list-disc list-inside ml-6">
-                          <li>Game result</li>
-                          <li>Move history</li>
-                          <li>Winner and reason</li>
-                        </ul>
-                      </li>
+                      <li>The match flow happens by selecting two bots and conducting their match</li>
+                      <li>The two bots are run in a secure environment with an engine</li>
+                      <li>Based on the result of the match, each bot gets an updated rating</li>
+                      <li>These matches happen at regular intervals or if a new bot joins the ring</li>
                     </ul>
                   </section>
 
@@ -197,36 +141,18 @@ int main() {
                   <section>
                     <h2 className="text-2xl font-semibold mb-2">⚠️ Rules & Tips</h2>
                     <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>Your bot must:
-                        <ul className="list-disc list-inside ml-6">
-                          <li>Respond to <code>uci</code>, <code>isready</code>, <code>position</code>, <code>go</code>, <code>quit</code></li>
-                          <li>Output only UCI responses (no debug prints to stdout)</li>
-                        </ul>
-                      </li>
-                      <li>Keep your response time &lt; 1 second</li>
-                      <li>Avoid memory leaks or background threads</li>
+                      <li>Your bot must not try to execute any malicious code</li>
+                      <li>Take care of the time limit per move</li>
+                      <li>Avoid memory leaks or spawning new threads</li>
                       <li>You can build advanced bots with:
                         <ul className="list-disc list-inside ml-6">
                           <li>Minimax</li>
                           <li>Evaluation functions</li>
-                          <li>Libraries like <a href="https://github.com/bagaturchess/chesslib" className="text-blue-400 underline">chesslib</a></li>
+                          <li>Any library can be used if everything is present in a single file</li>
                         </ul>
                       </li>
                     </ul>
                   </section>
-
-                  {/* Final Checklist */}
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-2">✅ Final Upload Checklist</h2>
-                    <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>Compiled binary (Linux-compatible)</li>
-                      <li>Tested with UCI manually</li>
-                      <li>Named appropriately (no spaces/special characters)</li>
-                      <li>Set as executable (<code>chmod +x my_bot</code>)</li>
-                      <li>Uploaded via the site interface (<a href="https://fightscript.io/competitions/chess" className="text-blue-400 underline">https://fightscript.io/competitions/chess</a>)</li>
-                    </ul>
-                  </section>
-
                 </section>
 
               </div>
