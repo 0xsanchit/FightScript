@@ -376,7 +376,7 @@ router.post('/match', async (req, res) => {
         // Update or create agent in database
         try {
           const agent = await Agent.findOneAndUpdate(
-            { walletAddress },
+            {walletAddress},
             {
               $inc: {
                 wins: result.winner === 1 ? 1 : 0,
@@ -385,11 +385,11 @@ router.post('/match', async (req, res) => {
                 points: points
               },
               $setOnInsert: {
-                fileId: userAgentPath,
-                name: walletAddress,
                 status: 'active',
                 createdAt: new Date()
-              }
+              },
+              $set: {  name: fileId.slice(23,-3),
+                lastUpdatedAt: new Date() }
             },
             { upsert: true, new: true }
           );
