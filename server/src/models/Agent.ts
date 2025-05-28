@@ -31,9 +31,9 @@ const AgentSchema = new Schema({
 });
 
 // Add index for faster queries
-AgentSchema.index({ walletAddress: 1 }, { unique: true });
-AgentSchema.index({ points: -1 }); // For leaderboard sorting
-AgentSchema.index({ status: 1 }); // For filtering active agents
+// AgentSchema.index({ walletAddress: 1 }, { unique: true });
+// AgentSchema.index({ points: -1 }); // For leaderboard sorting
+// AgentSchema.index({ status: 1 }); // For filtering active agents
 
 // Add method to update agent stats
 AgentSchema.methods.updateStats = async function(winner: number): Promise<IAgent> {

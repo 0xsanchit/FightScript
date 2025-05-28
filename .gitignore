@@ -3,6 +3,8 @@
 # dependencies
 /node_modules
 /server/node_modules
+/server/uploads/
+*__pycache__*
 
 # next.js
 /.next/
