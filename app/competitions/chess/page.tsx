@@ -10,13 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { startMatch, fetchUserStats, fetchUser } from '../../lib/api'
 import { LoadingState } from "@/components/ui/loading-state"
 import Footer from "@/components/footer"
+import LeaderboardComponent, { LeaderboardEntry } from "@/components/comp-leaderboard"
 
-const leaderboardData = [
-  { rank: 1, name: "AlphaChess", wins: 150, losses: 20 },
-  { rank: 2, name: "DeepMate", wins: 140, losses: 30 },
-  { rank: 3, name: "QuantumKnight", wins: 130, losses: 40 },
-  { rank: 4, name: "NeuralRook", wins: 120, losses: 50 },
-  { rank: 5, name: "AIBishop", wins: 110, losses: 60 },
+const leaderboardData: LeaderboardEntry[] = [
+  { rank: 1, name: "AlphaChess", wins: 150, losses: 20 , draws: 45},
+  { rank: 2, name: "DeepMate", wins: 140, losses: 30 , draws: 45 },
+  { rank: 3, name: "QuantumKnight", wins: 130, losses: 40 , draws: 45 },
+  { rank: 4, name: "NeuralRook", wins: 120, losses: 50 , draws: 45 },
+  { rank: 5, name: "AIBishop", wins: 110, losses: 60 , draws: 45 },
 ]
 
 interface UploadResponse {
@@ -731,6 +732,8 @@ export default function ChessCompetition() {
             <MatchResultDisplay {...matchStatus} />
           </div>
         </div>
+        
+        <LeaderboardComponent entries={leaderboardData}/>
       </main>
       <Footer />
       </div>
