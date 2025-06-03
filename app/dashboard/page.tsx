@@ -9,6 +9,7 @@ import type { Agent } from "@/types/dashboard"
 import type { Activity } from "@/types/dashboard"
 import { AgentsList } from "@/app/components/agents-list"
 import { ActivityFeed } from "@/app/components/activity-feed"
+import { DashboardTransactions } from "@/app/components/dashboard-transactions"
 import { LoadingState } from "@/app/components/ui/loading-state"
 import { Navbar } from "@/components/navbar"
 import { fetchUserStats, fetchUser } from "../lib/api"
@@ -180,6 +181,7 @@ export default function DashboardPage() {
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="agents">My Agents</TabsTrigger>
                 <TabsTrigger value="activities">Activities</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -293,6 +295,11 @@ export default function DashboardPage() {
               <TabsContent value="activities">
                 <ActivityFeed activities={userStats?.activities || []} />
               </TabsContent>
+
+              <TabsContent value="transactions">
+                <DashboardTransactions />
+              </TabsContent>
+
             </Tabs>
           </div>
         </div>

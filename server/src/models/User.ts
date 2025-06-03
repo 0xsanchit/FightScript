@@ -6,6 +6,7 @@ export interface IUser extends Document {
   profileImage: string;
   bio: string;
   role: 'user' | 'admin';
+  tokens: number;
   stats: {
     totalAgents: number;
     competitionsWon: number;
