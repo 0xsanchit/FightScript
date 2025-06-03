@@ -7,6 +7,8 @@ import path from "path";
 import { drive_v3 } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
 import { ChessEngine } from '../engine/chess-engine'
+import Agent from '../models/Agent';
+import User from '../models/User';
 
 const router = express.Router();
 
@@ -131,6 +133,32 @@ router.post("/agent", upload.single("file"), async (req, res) => {
     //   console.error('Failed to clean up local file:', cleanupError);
     //   // Continue even if cleanup fails
     // }
+    const walletAddress = req.body.wallet;
+
+    const agent = await Agent.findOneAndUpdate(
+      {walletAddress},
+      {
+        $setOnInsert: {
+          status: 'active',
+          createdAt: new Date()
+        },
+        $set: {  
+          name: req.file.filename.slice(23,-3),
+          lastUpdatedAt: new Date() }
+      },
+      { upsert: true, new: true }
+    );
+
+    const user = await User.findOneAndUpdate(
+      {walletAddress},
+      {
+        $push:{
+          agents:agent._id
+        }
+      }
+    )
+
+    
 
     // Return the file information
     res.json({

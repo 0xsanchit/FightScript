@@ -383,13 +383,7 @@ router.post('/match', async (req, res) => {
                 losses: result.winner === 2 ? 1 : 0,
                 draws: result.winner === 0 ? 1 : 0,
                 points: points
-              },
-              $setOnInsert: {
-                status: 'active',
-                createdAt: new Date()
-              },
-              $set: {  name: fileId.slice(23,-3),
-                lastUpdatedAt: new Date() }
+              }
             },
             { upsert: true, new: true }
           );

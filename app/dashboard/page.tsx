@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [agent, setAgent] = useState<Agent | null>(null)
+  const [agent, setAgent] = useState<Agent[] | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
 
@@ -51,8 +51,14 @@ export default function DashboardPage() {
         const walletAddress = publicKey.toString();
         console.log("Checking user with wallet:", walletAddress);
 
-        const userData = await fetchUser(walletAddress);
+        // const userData = await fetchUser(walletAddress);
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${publicKey.toString()}`);
+        const userData = await userResponse.json();
+        const agentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents/user/${publicKey.toString()}`);
+        const agentData = await agentResponse.json()
+
         console.log("User data:", userData);
+        console.log("Agent data:",agentData);
 
         if (!userData) {
           setIsNewUser(true);
@@ -61,19 +67,15 @@ export default function DashboardPage() {
         }
 
         // Fetch user stats after confirming user exists
-        const statsData = await fetchUserStats(walletAddress);
-        console.log("User stats:", statsData);
+        // const statsData = await fetchUserStats(walletAddress);
+        // console.log("User stats:", statsData);
 
         setUserStats({
-          ...userData,
-          stats: statsData || {
-            totalAgents: 0,
-            competitionsWon: 0,
-            tokensEarned: 0,
-            winRate: 0,
-            totalGames: 0
-          }
+          ...userData
         });
+        setAgent(
+          [...agentData]
+        );
       } catch (error) {
         console.error("Error checking user:", error);
         if (error instanceof Error && error.message.includes('404')) {
@@ -89,38 +91,40 @@ export default function DashboardPage() {
 
     checkUser();
   }, [publicKey]);
+  
+  console.log(agent);
+  // useEffect(() => {
+  //   const fetchAgentStats = async () => {
+  //     if (!publicKey) return;
 
-  useEffect(() => {
-    const fetchAgentStats = async () => {
-      if (!publicKey) return;
+  //     try {
+  //       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${publicKey.toString()}`);
+  //       if (!response.ok) throw new Error('Failed to fetch agent stats');
+  //       const data = await response.json();
+  //       console.log(JSON.stringify(data))
 
-      try {
-        const response = await fetch(`/api/users/${publicKey.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch agent stats');
-        const data = await response.json();
+  //       if (data.agent) {
+  //         setAgent({
+  //           ...data.agent,
+  //           name: data.agent.name || 'Unnamed Agent',
+  //           wins: data.agent.wins || 0,
+  //           losses: data.agent.losses || 0,
+  //           draws: data.agent.draws || 0,
+  //           points: data.agent.points || 0,
+  //           rank: data.agent.rank || 0
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching agent stats:', error);
+  //     }
+  //   };
 
-        if (data.agent) {
-          setAgent({
-            ...data.agent,
-            name: data.agent.name || 'Unnamed Agent',
-            wins: data.agent.wins || 0,
-            losses: data.agent.losses || 0,
-            draws: data.agent.draws || 0,
-            points: data.agent.points || 0,
-            rank: data.agent.rank || 0
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching agent stats:', error);
-      }
-    };
-
-    if (userStats) {
-      fetchAgentStats();
-      const interval = setInterval(fetchAgentStats, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [publicKey, userStats]);
+  //   if (userStats) {
+  //     fetchAgentStats();
+  //     const interval = setInterval(fetchAgentStats, 5000);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [publicKey, userStats]);
 
   if (!publicKey) {
     return (
@@ -150,7 +154,7 @@ export default function DashboardPage() {
       </div>
     );
   }
-
+  console.log(userStats);
   return (
     <div className="min-h-screen bg-background">
       {/* Background gradients */}
@@ -191,7 +195,7 @@ export default function DashboardPage() {
                       <CardTitle>Total Agents</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{userStats?.stats?.totalAgents ?? 0}</div>
+                      <div className="text-2xl font-bold">{userStats?.agents?.length ?? 0}</div>
                       <Bot className="h-4 w-4 text-muted-foreground" />
                     </CardContent>
                   </Card>
@@ -211,7 +215,7 @@ export default function DashboardPage() {
                       <CardTitle>Tokens Earned</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{userStats?.stats?.tokensEarned ?? 0}</div>
+                      <div className="text-2xl font-bold">{userStats?.totalEarnings ?? 0}</div>
                       <Coins className="h-4 w-4 text-muted-foreground" />
                     </CardContent>
                   </Card>
@@ -277,14 +281,17 @@ export default function DashboardPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
+                          {agent.map(entry => (
                           <TableRow>
-                            <TableCell>{agent.name}</TableCell>
-                            <TableCell className="text-right">#{agent.rank || '-'}</TableCell>
-                            <TableCell className="text-right font-bold text-blue-600">{agent.points || 0}</TableCell>
-                            <TableCell className="text-right text-green-600">{agent.wins || 0}</TableCell>
-                            <TableCell className="text-right text-yellow-600">{agent.draws || 0}</TableCell>
-                            <TableCell className="text-right text-red-600">{agent.losses || 0}</TableCell>
-                          </TableRow>
+                          <TableCell>{entry.name}</TableCell>
+                          <TableCell className="text-right">#{entry.rank || '-'}</TableCell>
+                          <TableCell className="text-right font-bold text-blue-600">{entry.points || 0}</TableCell>
+                          <TableCell className="text-right text-green-600">{entry.wins || 0}</TableCell>
+                          <TableCell className="text-right text-yellow-600">{entry.draws || 0}</TableCell>
+                          <TableCell className="text-right text-red-600">{entry.losses || 0}</TableCell>
+                        </TableRow>
+                          ))}
+
                         </TableBody>
                       </Table>
                     )}

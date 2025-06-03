@@ -11,6 +11,7 @@ import usersRouter from './routes/users';
 import statsRouter from './routes/stats';
 import uploadRouter from './routes/upload';
 import chessRouter from './routes/chess';
+import agentRouter from './routes/agents';
 
 // Load environment variables based on NODE_ENV
 if (process.env.NODE_ENV === 'production') {
@@ -85,6 +86,7 @@ healthRouter.get('/', (req: Request, res: Response): void => {
 // Routes
 app.use('/api/competitions', competitionsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/agents',agentRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/chess', chessRouter);
