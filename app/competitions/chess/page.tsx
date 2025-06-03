@@ -12,14 +12,6 @@ import { LoadingState } from "@/components/ui/loading-state"
 import Footer from "@/components/footer"
 import LeaderboardComponent, { LeaderboardEntry } from "@/components/comp-leaderboard"
 
-const leaderboardData: LeaderboardEntry[] = [
-  { rank: 1, name: "AlphaChess", wins: 150, losses: 20 , draws: 45},
-  { rank: 2, name: "DeepMate", wins: 140, losses: 30 , draws: 45 },
-  { rank: 3, name: "QuantumKnight", wins: 130, losses: 40 , draws: 45 },
-  { rank: 4, name: "NeuralRook", wins: 120, losses: 50 , draws: 45 },
-  { rank: 5, name: "AIBishop", wins: 110, losses: 60 , draws: 45 },
-]
-
 interface UploadResponse {
   message: string;
   fileId: string;
@@ -290,9 +282,9 @@ export default function ChessCompetition() {
 
   // Refresh leaderboard after match completion
   useEffect(() => {
-    if (matchStatus.status === 'completed') {
+    // if (matchStatus.status === 'completed') {
       fetchLeaderboard();
-    }
+    // }
   }, [matchStatus.status]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -733,7 +725,7 @@ export default function ChessCompetition() {
           </div>
         </div>
         
-        <LeaderboardComponent entries={leaderboardData}/>
+        <LeaderboardComponent entries={leaderboard}/>
       </main>
       <Footer />
       </div>

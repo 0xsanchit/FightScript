@@ -10,7 +10,7 @@ import { Icon } from "@radix-ui/react-select"
 
 const navigationItems = [
   { href: "/competitions", label: "Competitions" ,icon: FileTerminalIcon},
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  // { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/docs", label: "Docs", icon:GraduationCapIcon},
   { href: "/about", label: "About Us", icon: InfoIcon }
   // Remove or update any staking-related links

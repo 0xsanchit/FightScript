@@ -35,9 +35,10 @@ const LeaderboardEntryRow: React.FC<{ entry: LeaderboardEntry }> = React.memo(({
       )}
     </TableCell>
     <TableCell>{entry.name}</TableCell>
+    <TableCell>{entry.owner}</TableCell>
     <TableCell>{entry.wins}</TableCell>
+    <TableCell>{entry.draws}</TableCell>
     <TableCell>{entry.losses}</TableCell>
-    <TableCell>{entry.draws}%</TableCell>
   </TableRow>
 ));
 
@@ -103,20 +104,26 @@ const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ entries }) 
                 </Button>
               </TableHead>
               <TableHead>
+                <Button variant="ghost" size="sm" onClick={() => handleSort('owner')}>
+                  Owner
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
                 <Button variant="ghost" size="sm" onClick={() => handleSort('wins')}>
                   Wins
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
               <TableHead>
-                <Button variant="ghost" size="sm" onClick={() => handleSort('losses')}>
-                  Losses
+                <Button variant="ghost" size="sm" onClick={() => handleSort('draws')}>
+                  Draws
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
               <TableHead>
-                <Button variant="ghost" size="sm" onClick={() => handleSort('draws')}>
-                  Win Rate
+                <Button variant="ghost" size="sm" onClick={() => handleSort('losses')}>
+                  Losses
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>

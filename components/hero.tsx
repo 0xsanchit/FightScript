@@ -21,9 +21,9 @@ export default function Hero() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
-        <Button variant="outline" size="lg" asChild>
-          <Link href="/stake">
-            Stake
+        <Button variant="outline" size="lg" asChild  disabled={true}>
+          <Link href="#"> 
+            Stake (Upcoming)  
           </Link>
         </Button>
       </div>
