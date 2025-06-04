@@ -2,7 +2,7 @@
 
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useEffect, useState } from 'react'
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { Menu, X, ChevronDown, HardDriveDownload, HardDriveUpload } from 'lucide-react'
 
 interface Wallet {
   adapter: {
@@ -69,30 +69,33 @@ export function WalletButton() {
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-60 bg-black rounded-md shadow-lg p-4 z-10 space-y-3">
+        <div className="absolute right-0 mt-2 w-60 bg-black rounded-md shadow-lg p-4 z-10 space-y-3 ">
           <div className="text-sm text-white break-words">
             <strong>Address:</strong><br />
             {publicKey.toString()}
           </div>
-          <div className="text-sm text-white w-100%">
+          <div className="text-sm text-white w-100% ">
             <strong>Balance:</strong> ◎ {balance?.toFixed(2) ?? '0.00'}
-          </div>
+          </div><div className='flex gap-4'>
           <button
             onClick={() => {
               //Put what the thing should do on Deposit button click XD
             }}
-            className="w-40% text-sm text-white bg-gray-800 rounded-md px-4 py-2 mr-8 hover:bg-gray-600"
+            className="w-100% text-sm text-white bg-gray-800 rounded-md px-2 py-2 hover:bg-gray-600 flex gap-2"
           >
+            <HardDriveUpload className="w-4 h-4" />
             Deposit
           </button>
           <button
             onClick={() => {
               //Put what the thing should do on Withdraw button click XD
             }}
-            className="w-40% text-sm text-white bg-gray-800 rounded-md px-4 py-2 hover:bg-gray-600"
+            className="w-40% text-sm text-white bg-gray-800 rounded-md px-2 py-2 hover:bg-gray-600 flex gap-2"
           >
+            <HardDriveDownload className="w-4 h-4" />
             withdraw
           </button>
+          </div>
           <button
             onClick={() => {
               disconnect()
