@@ -2,7 +2,7 @@
 
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useEffect, useState } from 'react'
-import { Menu, X, ChevronDown, HardDriveDownload, HardDriveUpload } from 'lucide-react'
+import { Menu, X, ChevronDown, HardDriveDownload, HardDriveUpload, Check, Ban } from 'lucide-react'
 import { Transaction, PublicKey, TransactionInstruction,sendAndConfirmTransaction } from '@solana/web3.js';
 import { 
   getAssociatedTokenAddress,
@@ -203,22 +203,22 @@ export function WalletButton() {
 
       { modalOpen &&
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform transition-all" 
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 transform transition-all" 
               >
 
-            <input
+            ◎<input
               id="depositVal"
               type="number"
               value={depositVal}
               onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
                 setDepositVal(e.target.value);
               }}
-              placeholder="Enter Amount..."
-            />                <Button onClick={transfer}>
-                  Deposit
+              placeholder="Enter Amount..." className='text-center rounded-lg mx-4'
+            />                <Button onClick={transfer} className=' bg-green-500'>
+                  <Check/>
                   </Button>
-                  <Button onClick={() => setModalOpen(false)}>
-                  Cancel 
+                  <Button onClick={() => setModalOpen(false)} className='mx-4 bg-red-500'>
+                  <Ban /> 
                   </Button>
       </div>
       </div>
