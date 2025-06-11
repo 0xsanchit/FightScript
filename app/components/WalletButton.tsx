@@ -1,8 +1,21 @@
 "use client"
 
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useEffect, useState } from 'react'
 import { Menu, X, ChevronDown, HardDriveDownload, HardDriveUpload } from 'lucide-react'
+import { Transaction, PublicKey, TransactionInstruction,sendAndConfirmTransaction } from '@solana/web3.js';
+import { 
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount
+} from "@solana/spl-token";
+import { ToastContainer, toast } from 'react-toastify';
+import { Button } from "@/components/ui/button"
+
+
 
 interface Wallet {
   adapter: {
@@ -11,15 +24,134 @@ interface Wallet {
 }
 
 export function WalletButton() {
-  const { connected, select, wallets, disconnect, publicKey } = useWallet()
+  const { connected, select,wallets,wallet, disconnect, publicKey,sendTransaction,signTransaction } = useWallet();
+  const { connection } = useConnection();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)
+  const [depositVal, setDepositVal] = useState<string>('');
+  const [modalOpen,setModalOpen] = useState(false);
+
+  const transfer = async () => {
+    if (!publicKey || !signTransaction) throw new WalletNotConnectedError();
+
+    try {
+      // Mint address of the token you want to transfer
+      const mint = new PublicKey("mntiweULKjN25579sJGfqFyvi31sriTzCX8Rhod3kQh");
+      
+      // Destination wallet (replace with the actual recipient)
+      const destWallet = new PublicKey("BipBKk7Mhry6KwpdDxM7gFkr5dEYsB6rdBrCvGwuTFbD");
+      
+      // Amount to transfer (in token decimals, e.g., 1000 = 1.000 tokens if decimals=3)
+
+      const amount = 1000000000*parseFloat(depositVal);
+
+      // Get or create the sender's ATA
+      const senderATA = await getAssociatedTokenAddress(
+        mint,
+        publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID 
+      );
+
+      // Get or create the recipient's ATA
+      const recipientATA = await getAssociatedTokenAddress(
+        mint,
+        destWallet,
+        false,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      console.log(senderATA.toString());
+      console.log(recipientATA.toString());
+      // Check if recipient ATA exists (if not, we need to create it)
+      const senderAccountInfo = await connection.getAccountInfo(senderATA);
+      const recipientAccountInfo = await connection.getAccountInfo(recipientATA);
+      console.log(senderAccountInfo);
+      console.log(recipientAccountInfo);
+      const instructions: TransactionInstruction[] = [];
+
+      if(!senderAccountInfo)
+      {
+        instructions.push(
+          createAssociatedTokenAccountInstruction(
+            publicKey, // Payer
+            senderATA, // ATA address
+            publicKey, // Owner
+            mint, // Mint
+            TOKEN_2022_PROGRAM_ID
+          )
+        );
+      }
+
+      // If recipient ATA doesn't exist, add a creation instruction
+      if (!recipientAccountInfo) {
+        instructions.push(
+          createAssociatedTokenAccountInstruction(
+            publicKey, // Payer
+            recipientATA, // ATA address
+            destWallet, // Owner
+            mint, // Mint
+            TOKEN_2022_PROGRAM_ID
+          )
+        );
+      }
+
+      // Add the token transfer instruction
+      instructions.push(
+        createTransferInstruction(
+          senderATA, // Source ATA
+          recipientATA, // Destination ATA
+          publicKey, // Owner of sender ATA
+          amount, // Amount (in token units)
+          [], // Signers (empty for now)
+          TOKEN_2022_PROGRAM_ID,
+        )
+      );
+
+      // Create and send the transaction
+      const transaction = new Transaction().add(...instructions);
+      transaction.feePayer = publicKey;
+      transaction.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+
+      // Sign and send
+      const signedTx = await signTransaction(transaction);
+      const txSignature = await connection.sendRawTransaction(signedTx.serialize());
+
+      console.log("Transaction sent:", txSignature);
+      await connection.confirmTransaction(txSignature);
+
+      // Use the direct backend URL
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/token/deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          'signature': txSignature,
+          'wallet': publicKey.toString(),
+        }),
+      });
+
+      if (!uploadResponse.ok) {
+        toast("Deposit Failed! If any tokens have been deducted, please contact support");
+      }
+      else
+      {
+        toast("Deposit Successful! Please refresh in 5-10mins for updated balance");
+      }
+
+    } catch (error) {
+      console.error("Transaction failed:", error);
+    }
+  };
 
   // Fetch balance on connect
   useEffect(() => {
     const fetchBalance = async () => {
       if (publicKey) {
-        // fill the code??
+
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${publicKey.toString()}`);
+        const userData = await userResponse.json();
+        console.log(userData);
+        setBalance(userData.balance/1000000000);
       }
     }
     if (connected) {      
@@ -61,12 +193,36 @@ export function WalletButton() {
   // AFTER connecting, it will show hamburger.
   return (
     <div className="relative">
+      <ToastContainer />
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="p-2 text-white bg-gray-800 rounded-md hover:bg-gray-700"
       >
         {isDropdownOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
+
+      { modalOpen &&
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 transform transition-all" 
+              >
+
+            <input
+              id="depositVal"
+              type="number"
+              value={depositVal}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>): void => {
+                setDepositVal(e.target.value);
+              }}
+              placeholder="Enter Amount..."
+            />                <Button onClick={transfer}>
+                  Deposit
+                  </Button>
+                  <Button onClick={() => setModalOpen(false)}>
+                  Cancel 
+                  </Button>
+      </div>
+      </div>
+      }
 
       {isDropdownOpen && (
         <div className="absolute right-0 mt-2 w-60 bg-black rounded-md shadow-lg p-4 z-10 space-y-3 ">
@@ -78,9 +234,7 @@ export function WalletButton() {
             <strong>Balance:</strong> ◎ {balance?.toFixed(2) ?? '0.00'}
           </div><div className='flex gap-4'>
           <button
-            onClick={() => {
-              //Put what the thing should do on Deposit button click XD
-            }}
+            onClick={() => setModalOpen(true)}
             className="w-100% text-sm text-white bg-gray-800 rounded-md px-2 py-2 hover:bg-gray-600 flex gap-2"
           >
             <HardDriveUpload className="w-4 h-4" />

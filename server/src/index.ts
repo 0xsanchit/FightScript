@@ -12,6 +12,7 @@ import statsRouter from './routes/stats';
 import uploadRouter from './routes/upload';
 import chessRouter from './routes/chess';
 import agentRouter from './routes/agents';
+import tokenRouter from './routes/token';
 
 // Load environment variables based on NODE_ENV
 if (process.env.NODE_ENV === 'production') {
@@ -91,6 +92,7 @@ app.use('/api/stats', statsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/chess', chessRouter);
 app.use('/health', healthRouter);
+app.use('/api/token',tokenRouter);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

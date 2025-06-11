@@ -14,11 +14,13 @@ export interface IUser extends Document {
     winRate: number;
   };
   totalEarnings: number;
+  balance: number;
   createdAt: Date;
   competitions: mongoose.Types.ObjectId[];
   submissions: mongoose.Types.ObjectId[];
   agents: mongoose.Types.ObjectId[];
   activities: mongoose.Types.ObjectId[];
+  deposits: string [];
 }
 
 const UserSchema = new Schema({
@@ -67,6 +69,10 @@ const UserSchema = new Schema({
     type: Number,
     default: 0
   },
+  balance: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -86,6 +92,9 @@ const UserSchema = new Schema({
   activities: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Activity'
+  }],
+  deposits : [{
+    type: String
   }]
 })
 

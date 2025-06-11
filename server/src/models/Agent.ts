@@ -10,6 +10,9 @@ export interface IAgent extends Document {
   rank: number;
   status: 'active' | 'inactive';
   createdAt: Date;
+  competition: String;
+  rating : number;
+  filename: String;
 }
 
 interface IAgentMethods {
@@ -20,15 +23,18 @@ type AgentModel = mongoose.Model<IAgent, {}, IAgentMethods>;
 
 const AgentSchema = new Schema({
   name: { type: String, required: true },
-  walletAddress: { type: String, required: true,index : true },
+  walletAddress: { type: String, required: true},
   wins: { type: Number, default: 0 },
   losses: { type: Number, default: 0 },
   draws: { type: Number, default: 0 },
   points: { type: Number, default: 0 },
   rank: { type: Number, default: 0 },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  competition: {type: String, enum:['chess'],default:'chess'},
   createdAt: { type: Date, default: Date.now },
-  lastUpdatedAt: {type : Date, default: Date.now}
+  lastUpdatedAt: {type : Date, default: Date.now},
+  rating: {type: Number, default: 0},
+  filename: {type: String,required: true}
 });
 
 // Add index for faster queries

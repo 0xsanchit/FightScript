@@ -328,6 +328,7 @@ export default function ChessCompetition() {
       const formData = new FormData();
       formData.append('file', uploadState.file);
       formData.append('wallet', publicKey.toString());
+      formData.append('competition','chess');
 
       console.log('Uploading file:', uploadState.file.name);
 

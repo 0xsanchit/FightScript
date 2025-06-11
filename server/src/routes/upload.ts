@@ -135,18 +135,18 @@ router.post("/agent", upload.single("file"), async (req, res) => {
     // }
     const walletAddress = req.body.wallet;
 
-    const agent = await Agent.findOneAndUpdate(
-      {walletAddress},
+    const rank = await Agent.countDocuments({status:'active',competition:req.body.competition})
+
+    const agent = await Agent.insertOne(
       {
-        $setOnInsert: {
+          walletAddress:walletAddress,
           status: 'active',
-          createdAt: new Date()
-        },
-        $set: {  
+          createdAt: new Date(),
           name: req.file.filename.slice(23,-3),
-          lastUpdatedAt: new Date() }
+          filename:req.file.filename,
+          lastUpdatedAt: new Date(),
+          rank: rank
       },
-      { upsert: true, new: true }
     );
 
     const user = await User.findOneAndUpdate(
@@ -156,9 +156,21 @@ router.post("/agent", upload.single("file"), async (req, res) => {
           agents:agent._id
         }
       }
-    )
+    );
 
-    
+    for (const id of user?.agents?? []) {
+      const doc = await Agent.findOne({ _id: id });
+
+      if (doc && doc.status === "active" && doc.competition == req.body.competition) {
+        await Agent.updateOne(
+          { _id: id },
+          { $set: { status: "inactive" } }
+        );
+        console.log(`Updated: ${id}`);
+      } else {
+        console.log(`Skipped: ${id}`);
+      }
+    }
 
     // Return the file information
     res.json({

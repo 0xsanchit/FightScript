@@ -376,7 +376,11 @@ router.post('/match', async (req, res) => {
         // Update or create agent in database
         try {
           const agent = await Agent.findOneAndUpdate(
-            {walletAddress},
+            {
+              walletAddress:walletAddress,
+              competition:'chess',
+              status:'active'
+            },
             {
               $inc: {
                 wins: result.winner === 1 ? 1 : 0,
@@ -457,6 +461,72 @@ router.get('/agents/:wallet', async (req, res) => {
   }
 });
 
+// async function conductMatch(agent1_id,agent2_id)
+// {
+//   const result = await chessEngine.runMatch(userAgentPath, aggressiveBotPath);
+//   console.log('Match completed with result:', result);
+  
+//   // Update match status and database based on result
+//   const updatedMatch = matches.get(matchId);
+//   if (updatedMatch) {
+//     let points = 0;
+//     if (result.winner === 1) {
+//       updatedMatch.status = 'completed';
+//       updatedMatch.winner = 'user';
+//       updatedMatch.message = 'Match completed. Your agent won! (+2 points)';
+//       points = 2;
+//     } else if (result.winner === 2) {
+//       updatedMatch.status = 'completed';
+//       updatedMatch.winner = 'opponent';
+//       updatedMatch.message = 'Match completed. The aggressive bot won. (+0 points)';
+//       points = 0;
+//     } else {
+//       updatedMatch.status = 'completed';
+//       updatedMatch.winner = 'draw';
+//       updatedMatch.message = 'Match completed. The game ended in a draw. (+1 point)';
+//       points = 1;
+//     }
+
+//     updatedMatch.moves = result.moves;
+//     updatedMatch.engineOutput = result.engineOutput || '';
+//     console.log('Match completed successfully:', {
+//       winner: updatedMatch.winner,
+//       reason: result.reason,
+//       moves: result.moves.length
+//     });
+
+//     // Update or create agent in database
+//     try {
+//       const agent = await Agent.findOneAndUpdate(
+//         {
+//           walletAddress:walletAddress,
+//           competition:'chess',
+//           status:'active'
+//         },
+//         {
+//           $inc: {
+//             wins: result.winner === 1 ? 1 : 0,
+//             losses: result.winner === 2 ? 1 : 0,
+//             draws: result.winner === 0 ? 1 : 0,
+//             points: points
+//           }
+//         },
+//         { upsert: true, new: true }
+//       );
+
+//       console.log('Agent stats updated in database:', {
+//         walletAddress,
+//         wins: agent.wins,
+//         losses: agent.losses,
+//         draws: agent.draws,
+//         points: agent.points
+//       });
+//     } catch (dbError) {
+//       console.error('Failed to update agent stats:', dbError);
+//       // Continue even if database update fails
+//     }
+// }
+
 // Clean up completed matches periodically
 setInterval(() => {
   for (const [id, match] of matches.entries()) {
@@ -467,6 +537,9 @@ setInterval(() => {
       }, 3600000); // 1 hour
     }
   }
+
+  
+
 }, 300000); // Check every 5 minutes
 
 export default router; 
