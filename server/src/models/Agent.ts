@@ -10,9 +10,9 @@ export interface IAgent extends Document {
   rank: number;
   status: 'active' | 'inactive';
   createdAt: Date;
-  competition: String;
+  competition: string;
   rating : number;
-  filename: String;
+  filename: string;
 }
 
 interface IAgentMethods {

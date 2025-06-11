@@ -23,6 +23,21 @@ interface Wallet {
   };
 }
 
+function floatStringToBigIntScaled(floatStr: string): bigint {
+  let [integerPart, fractionalPart = ""] = floatStr.split(".");
+
+  // Normalize fractional part to 9 digits (pad with zeros or truncate)
+  fractionalPart = (fractionalPart + "000000000").slice(0, 9);
+
+  const integerBigInt = BigInt(integerPart);
+  const fractionalBigInt = BigInt(fractionalPart);
+
+  // Scale and combine both parts
+  const result = integerBigInt * 1_000_000_000n + fractionalBigInt;
+
+  return result;
+}
+
 export function WalletButton() {
   const { connected, select,wallets,wallet, disconnect, publicKey,sendTransaction,signTransaction } = useWallet();
   const { connection } = useConnection();
@@ -42,8 +57,7 @@ export function WalletButton() {
       const destWallet = new PublicKey("BipBKk7Mhry6KwpdDxM7gFkr5dEYsB6rdBrCvGwuTFbD");
       
       // Amount to transfer (in token decimals, e.g., 1000 = 1.000 tokens if decimals=3)
-
-      const amount = 1000000000*parseFloat(depositVal);
+      const amount = floatStringToBigIntScaled(depositVal);
 
       // Get or create the sender's ATA
       const senderATA = await getAssociatedTokenAddress(

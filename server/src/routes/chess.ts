@@ -5,6 +5,7 @@ import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
 import Agent from '../models/Agent';
+import ChessMatch from '../models/ChessMatch';
 import { spawn } from 'child_process';
 import { chessEngine } from '../engine/chess-engine';
 import mongoose from 'mongoose';
@@ -276,6 +277,97 @@ router.get('/match', async (req, res) => {
   }
 });
 
+async function conduct_match(agent1_id:string,agent2_id:string){
+  try{
+    const agent1 = await Agent.findOne({_id:agent1_id});
+    const agent2 = await Agent.findOne({_id:agent2_id});
+
+    if(agent1 && agent2)
+    {
+      const agent1Path = path.join(process.cwd(), 'uploads', 'agents', agent1.filename);
+      const agent2Path = path.join(process.cwd(), 'uploads', 'agents', agent2.filename);
+
+      if (!fs.existsSync(agent1Path)) {
+        throw new Error(`Agent not found at path: ${agent1Path}`);
+      }
+      if (!fs.existsSync(agent2Path)) {
+        throw new Error(`Agent not found at path: ${agent2Path}`);
+      }
+
+
+      const result = await chessEngine.runMatch(agent1Path, agent2Path);
+
+      const match = ChessMatch.insertOne({
+        bot1:agent1._id,
+        bot2:agent2._id,
+        result: result.winner==1?"win":(result.winner==2?"loss":"draw"),
+        moves: result.moves
+      });
+      if(result.winner == 1)
+      {
+        await Agent.findOneAndUpdate(
+          {_id:agent1_id},
+          {
+            $inc:{
+              wins:1
+            }
+          }
+          );
+          await Agent.findOneAndUpdate(
+            {_id:agent2_id},
+            {
+            $inc:{
+              losses:1
+            }
+          }
+            );
+      }
+      else if(result.winner == 2)
+      {
+        await Agent.findOneAndUpdate(
+          {_id:agent1_id},
+          {
+          $inc:{
+            losses:1
+          }
+        }
+          );
+          await Agent.findOneAndUpdate(
+            {_id:agent2_id},
+            {
+            $inc:{
+              wins:1
+            }
+          }
+            );
+      }
+      else
+      {
+        await Agent.findOneAndUpdate(
+          {_id:agent1_id},
+          {
+          $inc:{
+            draw:1
+          }
+        }
+          );
+          await Agent.findOneAndUpdate(
+            {_id:agent2_id},
+            {
+            $inc:{
+              draws:1
+            }
+          }
+            );
+      }
+    }
+    return {"status":"error","error":"Agents don't exist at path"};
+  }
+  catch(error)
+  {
+    return {"status":"error","error":error};
+  }
+}
 // Update the match endpoint to handle errors properly
 router.post('/match', async (req, res) => {
   try {
