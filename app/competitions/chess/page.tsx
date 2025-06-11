@@ -11,6 +11,7 @@ import { startMatch, fetchUserStats, fetchUser } from '../../lib/api'
 import { LoadingState } from "@/components/ui/loading-state"
 import Footer from "@/components/footer"
 import LeaderboardComponent, { LeaderboardEntry } from "@/components/comp-leaderboard"
+import { Clock } from "lucide-react"
 
 interface UploadResponse {
   message: string;
@@ -97,7 +98,7 @@ const MatchResultDisplay = ({ status, result, engineOutput, message }: MatchStat
   const stockfishInfo = parseStockfishOutput(engineOutput);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="rounded-lg shadow-md p-6 mb-6">
       <h3 className="text-xl font-semibold mb-4">Match Status</h3>
       
       {status === 'running' && (
@@ -591,100 +592,87 @@ export default function ChessCompetition() {
           <h1 className="text-4xl font-bold">Chess AI Arena</h1>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Submit Your Chess Agent</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Agent File (.py)
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1">
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                    <div className="space-y-1 text-center">
-                      <svg
-                        className="mx-auto h-12 w-12 text-gray-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <div className="flex text-sm text-black">
-                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                          <span>Upload a file</span>
-                          <input
-                            type="file"
-                            className="sr-only"
-                            accept=".py"
-                            onChange={handleFileChange}
-                          />
-                        </label>
-                        <p className="pl-1 text-black">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-black">
-                        Python files only (.py)
-                      </p>
-                    </div>
+        <div className="bg-gray-900 rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Submit Your Chess Agent</h2>
+        <div className="flex"><Clock />00:00:00</div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Upload Agent File (.py)
+          </label>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-md hover:border-gray-400 transition-colors">
+                <div className="space-y-1 text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="flex text-sm text-gray-600 dark:text-gray-300">
+                    <label className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                      <span>Upload a file</span>
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept=".py"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
                   </div>
+                  <p className="text-xs text-gray-400">
+                    Python files only (.py)
+                  </p>
                 </div>
-                <button
-                  onClick={handleUpload}
-                  disabled={!uploadState.file || uploadState.uploading}
-                  className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white 
-                    ${!uploadState.file || uploadState.uploading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                >
-                  {uploadState.uploading ? 'Uploading...' : 'Upload'}
-                </button>
               </div>
             </div>
-            
-            {/* Status Messages */}
-            {uploadState.error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{uploadState.error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {uploadState.success && (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-700">Bot uploaded successfully!</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={handleUpload}
+              disabled={!uploadState.file || uploadState.uploading}
+              className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white
+                ${!uploadState.file || uploadState.uploading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              {uploadState.uploading ? 'Uploading...' : 'Upload'}
+            </button>
           </div>
         </div>
 
+        {/* Status Messages */}
+        {uploadState.error && (
+          <div className="rounded-md bg-red-100 p-4 text-red-700 text-sm flex items-start space-x-2">
+            <svg className="h-5 w-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <span>{uploadState.error}</span>
+          </div>
+        )}
+
+        {uploadState.success && (
+          <div className="rounded-md bg-green-100 p-4 text-green-700 text-sm flex items-start space-x-2">
+            <svg className="h-5 w-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>Bot uploaded successfully!</span>
+          </div>
+        )}
+      </div>
+    </div>
+
+
         
         {/* Engine Status with more detail */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="bg-gray-900 rounded-lg shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">Match Status</h2>
           <div className="space-y-4">
             <div className={`p-4 rounded-md ${
@@ -696,7 +684,7 @@ export default function ChessCompetition() {
                 ? 'bg-blue-50 border border-blue-200'
                 : matchStatus.status === 'compiling'
                 ? 'bg-yellow-50 border border-yellow-200'
-                : 'bg-gray-50 border border-gray-200'
+                : 'bg-gray-800 border border-gray-800'
             }`}>
               <div className="flex items-center">
                 {matchStatus.status === 'running' && (
