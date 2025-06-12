@@ -614,7 +614,7 @@ export default function ChessCompetition() {
         <div className="bg-gray-900 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Submit Your Chess Agent</h2>
-        <div className="flex"><Clock /><CountdownTimer targetDate={rewardDate}/></div>
+        <div className="flex">Time left: <Clock /><CountdownTimer targetDate={rewardDate}/></div>
       </div>
 
       <div className="space-y-4">

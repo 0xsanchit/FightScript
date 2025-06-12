@@ -337,6 +337,7 @@ async function conduct_match(agent1_id:mongoose.Schema.Types.ObjectId,agent2_id:
         bot1:agent1._id,
         bot2:agent2._id,
         result: result.winner==1?"win":(result.winner==2?"loss":"draw"),
+        reason: result.reason,
         moves: result.moves
       });
 
@@ -424,6 +425,36 @@ async function conduct_match(agent1_id:mongoose.Schema.Types.ObjectId,agent2_id:
             }
           }
             );
+      }
+
+      const reason = result.reason.replace(/[\n\r]/g, '');
+      if(reason == "Timeout" || reason == "Exception" || reason == "illegal move" || reason == "agent error")
+      {
+        console.log("Setting inactive");
+        if(result.winner == 1)
+        {
+          console.log("agent 2");
+          await Agent.findOneAndUpdate(
+            {_id:agent2_id},
+            {
+            $set:{
+              status:"inactive"
+            }
+          }
+            );
+        }
+        else if(result.winner == 2)
+        {
+          console.log("agent 1");
+          await Agent.findOneAndUpdate(
+            {_id:agent1_id},
+            {
+            $set:{
+              status:"inactive"
+            }
+          }
+            );
+        }
       }
     }
   }
@@ -698,7 +729,10 @@ async function timerMatch()
     { $sort: { total: 1 } },
     { $limit: 2 }
   ]);
-  conduct_match(agent1[0]._id,agent1[1]._id);
+  if(agent1[0] && agent1[1])
+  {
+    conduct_match(agent1[0]._id,agent1[1]._id);
+  }
 }
 
 // Clean up completed matches periodically

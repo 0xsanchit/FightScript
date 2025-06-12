@@ -4,6 +4,7 @@ export interface IChessMatch extends Document {
   bot1: mongoose.Schema.Types.ObjectId,
   bot2: mongoose.Schema.Types.ObjectId,
   result: string,
+  reason: string,
   moves: string[]
 }
 
@@ -13,6 +14,7 @@ const ChessMatchSchema = new Schema({
   bot1: {type:mongoose.Schema.Types.ObjectId, required: true},
   bot2: {type:mongoose.Schema.Types.ObjectId, required: true},
   result: {type: String, required: true},
+  reason: {type: String, required: true},
   moves: [{type: String, required: true}]
 });
 
