@@ -18,23 +18,34 @@ const matches: Map<string, {
   winner?: string;
 }> = new Map();
 
+// router.get("/", async (req, res) => {
+//   try {
+//     await dbConnect();
+//     const competitions = await Competition.find({})
+//       .populate("participants", "username walletAddress")
+//       .populate("winner", "username walletAddress")
+//       .populate("createdBy", "username walletAddress")
+//       .populate({
+//         path: "submissions",
+//         populate: {
+//           path: "agent",
+//           select: "name category winRate",
+//         },
+//       })
+//       .lean()
+//       .exec();
+
+//     return res.json(competitions);
+//   } catch (error) {
+//     console.error("Failed to fetch competitions:", error);
+//     return res.status(500).json({ error: "Failed to fetch competitions" });
+//   }
+// });
+
 router.get("/", async (req, res) => {
   try {
-    await dbConnect();
-    const competitions = await Competition.find({})
-      .populate("participants", "username walletAddress")
-      .populate("winner", "username walletAddress")
-      .populate("createdBy", "username walletAddress")
-      .populate({
-        path: "submissions",
-        populate: {
-          path: "agent",
-          select: "name category winRate",
-        },
-      })
-      .lean()
-      .exec();
-
+    const competitions = await Competition.findOne({"title":"chess"});
+    console.log(competitions);
     return res.json(competitions);
   } catch (error) {
     console.error("Failed to fetch competitions:", error);
@@ -76,9 +87,9 @@ router.get('/leaderboard', async (req, res) => {
   try {
     // Get all active agents with their current stats
     const agents = await Agent.find({ status: 'active' })
-      .sort({ points: -1, wins: -1 }) // Sort by points first, then wins
+      .sort({ rating: -1, wins: -1 }) // Sort by rating first, then wins
       .limit(100) // Limit to top 100 agents
-      .select('name walletAddress wins losses draws points');
+      .select('name walletAddress wins losses draws points rating');
 
     // Add rank to each agent
     const leaderboard = agents.map((agent, index) => ({
@@ -89,7 +100,8 @@ router.get('/leaderboard', async (req, res) => {
       losses: agent.losses || 0,
       draws: agent.draws || 0,
       points: agent.points || 0,
-      rank: index + 1
+      rank: index + 1,
+      rating: agent.rating || 1200
     }));
 
     res.json(leaderboard);
