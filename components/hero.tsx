@@ -27,6 +27,11 @@ export default function Hero() {
           </Link>
         </Button>
       </div>
+        <Button variant="outline" size="lg" asChild >
+          <Link href="https://jup.ag/swap/SOL-mntiweULKjN25579sJGfqFyvi31sriTzCX8Rhod3kQh" target="_blank"> 
+            Swap FS Token  
+          </Link>
+        </Button>
     </section>
   )
 }
