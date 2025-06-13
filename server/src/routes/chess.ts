@@ -180,9 +180,9 @@ router.get('/leaderboard', async (req, res) => {
     }
 
     const agents = await Agent.find({ status: 'active' })
-      .sort({ points: -1, wins: -1 }) // Sort by points first, then wins
+      .sort({ rating: -1, wins: -1 }) // Sort by points first, then wins
       .limit(100) // Limit to top 100 agents
-      .select('name walletAddress wins losses draws points');
+      .select('name walletAddress wins losses draws points rating');
 
     // Add rank to each agent
     const leaderboard = agents.map((agent, index) => ({
@@ -193,7 +193,8 @@ router.get('/leaderboard', async (req, res) => {
       losses: agent.losses || 0,
       draws: agent.draws || 0,
       points: agent.points || 0,
-      rank: index + 1
+      rank: index + 1,
+      rating: agent.rating || 1200
     }));
 
     res.json(leaderboard);
@@ -277,32 +278,79 @@ router.get('/match', async (req, res) => {
   }
 });
 
-async function conduct_match(agent1_id:string,agent2_id:string){
+function updateElo(r1: number, r2: number, t1: number, t2: number, outcome: "win" | "draw" | "lose") {
+  const getK = (matches: number) => matches < 30 ? 40 : matches < 100 ? 20 : 10;
+
+  const K1 = getK(t1);
+  const K2 = getK(t2);
+
+  const E1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
+  const E2 = 1 - E1;
+
+  let S1: number, S2: number;
+
+  if (outcome === "win") {
+    S1 = 1;
+    S2 = 0;
+  } else if (outcome === "draw") {
+    S1 = S2 = 0.5;
+  } else {
+    S1 = 0;
+    S2 = 1;
+  }
+
+  const r1New = r1 + K1 * (S1 - E1);
+  const r2New = r2 + K2 * (S2 - E2);
+
+  return {
+    r1New: Math.round(r1New),
+    r2New: Math.round(r2New),
+  };
+}
+
+
+async function conduct_match(agent1_id:mongoose.Schema.Types.ObjectId,agent2_id:mongoose.Schema.Types.ObjectId){
   try{
     const agent1 = await Agent.findOne({_id:agent1_id});
     const agent2 = await Agent.findOne({_id:agent2_id});
 
     if(agent1 && agent2)
     {
+      console.log("Agents found");
       const agent1Path = path.join(process.cwd(), 'uploads', 'agents', agent1.filename);
       const agent2Path = path.join(process.cwd(), 'uploads', 'agents', agent2.filename);
+      console.log(agent1Path,agent2Path);
 
       if (!fs.existsSync(agent1Path)) {
+        console.log("Agent1 not found");
         throw new Error(`Agent not found at path: ${agent1Path}`);
       }
       if (!fs.existsSync(agent2Path)) {
+        console.log("Agent2 not found");
         throw new Error(`Agent not found at path: ${agent2Path}`);
       }
 
-
+      console.log("Starting Match");
       const result = await chessEngine.runMatch(agent1Path, agent2Path);
 
-      const match = ChessMatch.insertOne({
+      const match = await ChessMatch.insertOne({
         bot1:agent1._id,
         bot2:agent2._id,
         result: result.winner==1?"win":(result.winner==2?"loss":"draw"),
+        reason: result.reason,
         moves: result.moves
       });
+
+      console.log(result);
+
+      const winR =  updateElo(agent1.rating,agent2.rating,(agent1.wins+agent1.losses+agent1.draws),(agent2.wins+agent2.losses+agent2.draws),"win");
+      const lossR =  updateElo(agent1.rating,agent2.rating,(agent1.wins+agent1.losses+agent1.draws),(agent2.wins+agent2.losses+agent2.draws),"lose");
+      const drawR =  updateElo(agent1.rating,agent2.rating,(agent1.wins+agent1.losses+agent1.draws),(agent2.wins+agent2.losses+agent2.draws),"draw");
+
+      console.log(winR);
+      console.log(lossR);
+      console.log(drawR);
+
       if(result.winner == 1)
       {
         await Agent.findOneAndUpdate(
@@ -310,6 +358,9 @@ async function conduct_match(agent1_id:string,agent2_id:string){
           {
             $inc:{
               wins:1
+            },
+            $set:{
+              rating:winR.r1New
             }
           }
           );
@@ -318,6 +369,9 @@ async function conduct_match(agent1_id:string,agent2_id:string){
             {
             $inc:{
               losses:1
+            },
+            $set:{
+              rating:winR.r2New
             }
           }
             );
@@ -329,6 +383,9 @@ async function conduct_match(agent1_id:string,agent2_id:string){
           {
           $inc:{
             losses:1
+          },
+          $set:{
+            rating:lossR.r1New
           }
         }
           );
@@ -337,6 +394,9 @@ async function conduct_match(agent1_id:string,agent2_id:string){
             {
             $inc:{
               wins:1
+            },
+            $set:{
+              rating:lossR.r2New
             }
           }
             );
@@ -347,7 +407,10 @@ async function conduct_match(agent1_id:string,agent2_id:string){
           {_id:agent1_id},
           {
           $inc:{
-            draw:1
+            draws:1
+          },
+          $set:{
+            rating:drawR.r1New
           }
         }
           );
@@ -356,18 +419,53 @@ async function conduct_match(agent1_id:string,agent2_id:string){
             {
             $inc:{
               draws:1
+            },
+            $set:{
+              rating:drawR.r2New
             }
           }
             );
       }
+
+      const reason = result.reason.replace(/[\n\r]/g, '');
+      if(reason == "Timeout" || reason == "Exception" || reason == "illegal move" || reason == "agent error")
+      {
+        console.log("Setting inactive");
+        if(result.winner == 1)
+        {
+          console.log("agent 2");
+          await Agent.findOneAndUpdate(
+            {_id:agent2_id},
+            {
+            $set:{
+              status:"inactive"
+            }
+          }
+            );
+        }
+        else if(result.winner == 2)
+        {
+          console.log("agent 1");
+          await Agent.findOneAndUpdate(
+            {_id:agent1_id},
+            {
+            $set:{
+              status:"inactive"
+            }
+          }
+            );
+        }
+      }
     }
-    return {"status":"error","error":"Agents don't exist at path"};
   }
   catch(error)
   {
-    return {"status":"error","error":error};
   }
 }
+
+
+
+
 // Update the match endpoint to handle errors properly
 router.post('/match', async (req, res) => {
   try {
@@ -619,6 +717,24 @@ router.get('/agents/:wallet', async (req, res) => {
 //     }
 // }
 
+async function timerMatch()
+{
+  const agent1 = await Agent.aggregate([
+    { $match: {"status":"active"} },
+    {
+      $addFields: {
+        total: { $add: ["$wins", "$losses", "$draws"] }
+      }
+    },
+    { $sort: { total: 1 } },
+    { $limit: 2 }
+  ]);
+  if(agent1[0] && agent1[1])
+  {
+    conduct_match(agent1[0]._id,agent1[1]._id);
+  }
+}
+
 // Clean up completed matches periodically
 setInterval(() => {
   for (const [id, match] of matches.entries()) {
@@ -629,9 +745,12 @@ setInterval(() => {
       }, 3600000); // 1 hour
     }
   }
-
-  
-
 }, 300000); // Check every 5 minutes
+
+setInterval(() => {
+  timerMatch();
+}, 300000); // Check every 5 minutes
+
+timerMatch();
 
 export default router; 

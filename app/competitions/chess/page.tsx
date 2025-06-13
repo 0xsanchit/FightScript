@@ -11,6 +11,7 @@ import { startMatch, fetchUserStats, fetchUser } from '../../lib/api'
 import { LoadingState } from "@/components/ui/loading-state"
 import Footer from "@/components/footer"
 import LeaderboardComponent, { LeaderboardEntry } from "@/components/comp-leaderboard"
+import CountdownTimer from "@/components/countdown-timer"
 import { Clock } from "lucide-react"
 
 interface UploadResponse {
@@ -233,6 +234,7 @@ export default function ChessCompetition() {
     error: null,
     success: false
   });
+  const [rewardDate,setRewardDate] = useState<Date>(new Date());
 
   const fetchUserData = useCallback(async () => {
     if (!publicKey) {
@@ -254,10 +256,27 @@ export default function ChessCompetition() {
     }
   }, [publicKey]);
 
+  const fetchCompetition = async () => {
+    if(publicKey)
+    {
+      try {
+        // Use the Next.js API route instead of direct backend call
+        const response = await fetch(`/api/competitions`);
+        if (!response.ok) throw new Error('Failed to fetch competition data');
+        const data = await response.json();
+        console.log("data",data[0]);
+        setRewardDate(new Date(data[0].endDate));
+      } catch (error) {
+        toast.error('Failed to fetch reward date');
+      }
+    }
+  }
+
   useEffect(() => {
     if (publicKey) {
       fetchUserData();
       fetchLeaderboard(); // Fetch leaderboard when component mounts
+      fetchCompetition();
     } else {
       setIsLoading(false);
     }
@@ -595,7 +614,7 @@ export default function ChessCompetition() {
         <div className="bg-gray-900 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Submit Your Chess Agent</h2>
-        <div className="flex"><Clock />00:00:00</div>
+        <div className="flex">Time left: <Clock /><CountdownTimer targetDate={rewardDate}/></div>
       </div>
 
       <div className="space-y-4">

@@ -36,6 +36,7 @@ const LeaderboardEntryRow: React.FC<{ entry: LeaderboardEntry }> = React.memo(({
     </TableCell>
     <TableCell>{entry.name}</TableCell>
     <TableCell>{entry.owner}</TableCell>
+    <TableCell>{entry.rating}</TableCell>
     <TableCell>{entry.wins}</TableCell>
     <TableCell>{entry.draws}</TableCell>
     <TableCell>{entry.losses}</TableCell>
@@ -106,6 +107,12 @@ const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ entries }) 
               <TableHead>
                 <Button variant="ghost" size="sm" onClick={() => handleSort('owner')}>
                   Owner
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" size="sm" onClick={() => handleSort('rating')}>
+                  Rating
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>

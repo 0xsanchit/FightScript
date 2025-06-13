@@ -145,7 +145,8 @@ router.post("/agent", upload.single("file"), async (req, res) => {
           name: req.file.filename.slice(23,-3),
           filename:req.file.filename,
           lastUpdatedAt: new Date(),
-          rank: rank
+          rank: rank,
+          rating: 1200
       },
     );
 

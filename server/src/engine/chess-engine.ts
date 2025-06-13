@@ -70,6 +70,7 @@ export class ChessEngine {
           }
   
           const result = lines[0];
+          const reason = lines[1];
           const pgn = lines.slice(1).join('\n');
           
           console.log('Match Result:', result);
@@ -78,7 +79,6 @@ export class ChessEngine {
           // Parse the result - adjust this based on your Python script's output format
           // Example assumes format like "winner:1,reason:checkmate" or similar
           let winner = parseInt(result);
-          let reason = 'Unknown';
           let moves: string[] = [];
   
           // You'll need to adjust this parsing based on your actual Python output format
