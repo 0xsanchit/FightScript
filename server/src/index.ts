@@ -53,7 +53,7 @@ app.use(cors({
     //   return callback(new Error(msg), false);
     // }
     
-    console.log('Origin allowed:', origin);
+    // console.log('Origin allowed:', origin);
     return callback(null, true);
   },
   credentials: true
