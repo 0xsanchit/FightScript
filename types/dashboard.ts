@@ -13,6 +13,7 @@ export interface Agent {
   rank: number
   status: string
   createdAt: string
+  rating: number
 }
 
 export interface Activity {

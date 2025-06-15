@@ -31,32 +31,13 @@ const allowedOrigins = [
   'https://co3pe.vercel.app/',
   'https://co3pe-git-main-rudraksh-joshis-projects-444a4ec5.vercel.app',
   'https://co3pe-j8uapg95q-rudraksh-joshis-projects-444a4ec5.vercel.app',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  '*'
 ];
 
 console.log('Allowed CORS origins:', allowedOrigins);
 
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('Request with no origin allowed');
-      return callback(null, true);
-    }
-    
-    console.log('Request origin:', origin);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('Origin not allowed:', origin);
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    
-    console.log('Origin allowed:', origin);
-    return callback(null, true);
-  },
-  credentials: true
-}));
+app.use(cors());
 
 // Middleware
 app.use(bodyParser.json());
@@ -102,5 +83,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`Server URL: ${process.env.NODE_ENV === 'production' ? 'https://co3pe.onrender.com' : 'http://localhost:5000'}`);
+  console.log(`Server URL: ${process.env.NODE_ENV === 'production' ? 'https://fight-script-server.vercel.app/' : 'http://localhost:5000'}`);
 });

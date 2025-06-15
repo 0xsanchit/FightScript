@@ -98,11 +98,11 @@ export default function AboutPage() {
               the Fight Script ecosystem. Join us in shaping the future of AI.
             </p>
             <div className="flex justify-center gap-4">
-              <a href="https://discord.gg/fightscript" target="_blank" rel="noopener noreferrer" 
+              <a href="https://discord.gg/BnQtGVCTAQ" target="_blank" rel="noopener noreferrer" 
                 className="inline-flex items-center px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                 Join Our Discord
               </a>
-              <a href="https://github.com/fightscript" target="_blank" rel="noopener noreferrer"
+              <a href="https://github.com/0xsanchit/FightScript" target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center px-6 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors">
                 GitHub Repository
               </a>

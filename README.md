@@ -1,6 +1,7 @@
-# Chess Competition Platform
+# Fight Script
 
-This project consists of a Next.js frontend deployed on Vercel and an Express backend deployed on Render.
+This project is the source code for fightscript.xyz and is used to power ai competitions for various games.
+If you want to contribute to this project, can open an issue, push a fix and submit it as a pull request.  
 
 ## Project Structure
 

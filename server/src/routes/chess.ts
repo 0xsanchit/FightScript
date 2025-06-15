@@ -1,7 +1,6 @@
 import express, { Request } from 'express';
 import { ChessEngine } from '../engine/chess-engine';
 import multer from 'multer';
-import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
 import Agent from '../models/Agent';
@@ -40,43 +39,6 @@ const matches: Map<string, {
   engineOutput?: string;
 }> = new Map();
 
-// Configure Google Drive
-const credentials = {
-  type: process.env.GOOGLE_DRIVE_TYPE,
-  project_id: process.env.GOOGLE_DRIVE_PROJECT_ID,
-  private_key_id: process.env.GOOGLE_DRIVE_PRIVATE_KEY_ID,
-  private_key: process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  client_email: process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
-  client_id: process.env.GOOGLE_DRIVE_CLIENT_ID,
-  auth_uri: process.env.GOOGLE_DRIVE_AUTH_URI,
-  token_uri: process.env.GOOGLE_DRIVE_TOKEN_URI,
-  auth_provider_x509_cert_url: process.env.GOOGLE_DRIVE_AUTH_PROVIDER_CERT_URL,
-  client_x509_cert_url: process.env.GOOGLE_DRIVE_CLIENT_CERT_URL
-};
-
-// Validate required credentials
-const requiredCredentials = [
-  'GOOGLE_DRIVE_TYPE',
-  'GOOGLE_DRIVE_PROJECT_ID',
-  'GOOGLE_DRIVE_PRIVATE_KEY',
-  'GOOGLE_DRIVE_CLIENT_EMAIL',
-  'GOOGLE_DRIVE_CLIENT_ID'
-];
-
-const missingCredentials = requiredCredentials.filter(key => !process.env[key]);
-
-if (missingCredentials.length > 0) {
-  console.error('Missing required Google Drive credentials:', missingCredentials);
-  throw new Error('Google Drive credentials not properly configured in environment variables');
-}
-
-const auth = new google.auth.GoogleAuth({
-  credentials,
-  scopes: ['https://www.googleapis.com/auth/drive.file']
-});
-
-const drive = google.drive({ version: 'v3', auth });
-
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: './uploads/agents',
@@ -113,40 +75,6 @@ const upload = multer({
 //     res.status(500).json({ error: 'Failed to get engine status' });
 //   }
 // });
-
-// Upload agent
-router.post('/upload', upload.single('file'), async (req, res) => {
-  try {
-    const file = req.file;
-    const wallet = req.body.wallet;
-
-    if (!file || !wallet) {
-      return res.status(400).json({ error: 'Missing file or wallet address' });
-    }
-
-    // Upload to Google Drive
-    const response = await drive.files.create({
-      requestBody: {
-        name: file.filename,
-        mimeType: 'text/x-c++src',
-      },
-      media: {
-        mimeType: 'text/x-c++src',
-        body: fs.createReadStream(file.path),
-      },
-    });
-
-    // Save agent info to database
-    // ... implement database logic here ...
-
-    res.json({ 
-      message: 'Agent uploaded successfully',
-      fileId: response.data.id 
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to upload agent' });
-  }
-});
 
 // Get user's agent
 router.get('/agent/:wallet', async (req, res) => {
@@ -613,26 +541,6 @@ router.post('/match', async (req, res) => {
   }
 });
 
-// Helper function to download file from Google Drive
-async function downloadFromDrive(fileId: string, dest: string) {
-  try {
-    const response = await drive.files.get(
-      { fileId, alt: 'media' },
-      { responseType: 'stream' }
-    );
-
-    await new Promise<void>((resolve, reject) => {
-      const dest_stream = fs.createWriteStream(dest);
-      response.data
-        .pipe(dest_stream)
-        .on('finish', () => resolve())
-        .on('error', (error) => reject(error));
-    });
-  } catch (error) {
-    throw new Error(`Failed to download file from Drive: ${error}`);
-  }
-}
-
 
 // Get user's agents
 router.get('/agents/:wallet', async (req, res) => {
@@ -650,72 +558,6 @@ router.get('/agents/:wallet', async (req, res) => {
     });
   }
 });
-
-// async function conductMatch(agent1_id,agent2_id)
-// {
-//   const result = await chessEngine.runMatch(userAgentPath, aggressiveBotPath);
-//   console.log('Match completed with result:', result);
-  
-//   // Update match status and database based on result
-//   const updatedMatch = matches.get(matchId);
-//   if (updatedMatch) {
-//     let points = 0;
-//     if (result.winner === 1) {
-//       updatedMatch.status = 'completed';
-//       updatedMatch.winner = 'user';
-//       updatedMatch.message = 'Match completed. Your agent won! (+2 points)';
-//       points = 2;
-//     } else if (result.winner === 2) {
-//       updatedMatch.status = 'completed';
-//       updatedMatch.winner = 'opponent';
-//       updatedMatch.message = 'Match completed. The aggressive bot won. (+0 points)';
-//       points = 0;
-//     } else {
-//       updatedMatch.status = 'completed';
-//       updatedMatch.winner = 'draw';
-//       updatedMatch.message = 'Match completed. The game ended in a draw. (+1 point)';
-//       points = 1;
-//     }
-
-//     updatedMatch.moves = result.moves;
-//     updatedMatch.engineOutput = result.engineOutput || '';
-//     console.log('Match completed successfully:', {
-//       winner: updatedMatch.winner,
-//       reason: result.reason,
-//       moves: result.moves.length
-//     });
-
-//     // Update or create agent in database
-//     try {
-//       const agent = await Agent.findOneAndUpdate(
-//         {
-//           walletAddress:walletAddress,
-//           competition:'chess',
-//           status:'active'
-//         },
-//         {
-//           $inc: {
-//             wins: result.winner === 1 ? 1 : 0,
-//             losses: result.winner === 2 ? 1 : 0,
-//             draws: result.winner === 0 ? 1 : 0,
-//             points: points
-//           }
-//         },
-//         { upsert: true, new: true }
-//       );
-
-//       console.log('Agent stats updated in database:', {
-//         walletAddress,
-//         wins: agent.wins,
-//         losses: agent.losses,
-//         draws: agent.draws,
-//         points: agent.points
-//       });
-//     } catch (dbError) {
-//       console.error('Failed to update agent stats:', dbError);
-//       // Continue even if database update fails
-//     }
-// }
 
 async function timerMatch()
 {
@@ -750,7 +592,5 @@ setInterval(() => {
 setInterval(() => {
   timerMatch();
 }, 300000); // Check every 5 minutes
-
-timerMatch();
 
 export default router; 

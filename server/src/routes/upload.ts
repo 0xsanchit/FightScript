@@ -1,11 +1,8 @@
 // src/routes/upload.ts
 import express from "express";
 import multer from "multer";
-import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
-import { drive_v3 } from 'googleapis';
-import { GoogleAuth } from 'google-auth-library';
 import { ChessEngine } from '../engine/chess-engine'
 import Agent from '../models/Agent';
 import User from '../models/User';
@@ -48,51 +45,6 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
-});
-
-// Google Drive API setup
-const credentials = {
-  type: process.env.GOOGLE_DRIVE_TYPE,
-  project_id: process.env.GOOGLE_DRIVE_PROJECT_ID,
-  private_key_id: process.env.GOOGLE_DRIVE_PRIVATE_KEY_ID,
-  private_key: process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  client_email: process.env.GOOGLE_DRIVE_CLIENT_EMAIL,
-  client_id: process.env.GOOGLE_DRIVE_CLIENT_ID,
-  auth_uri: process.env.GOOGLE_DRIVE_AUTH_URI,
-  token_uri: process.env.GOOGLE_DRIVE_TOKEN_URI,
-  auth_provider_x509_cert_url: process.env.GOOGLE_DRIVE_AUTH_PROVIDER_CERT_URL,
-  client_x509_cert_url: process.env.GOOGLE_DRIVE_CLIENT_CERT_URL
-};
-
-// Validate required credentials
-const requiredCredentials = [
-  'GOOGLE_DRIVE_TYPE',
-  'GOOGLE_DRIVE_PROJECT_ID',
-  'GOOGLE_DRIVE_PRIVATE_KEY',
-  'GOOGLE_DRIVE_CLIENT_EMAIL',
-  'GOOGLE_DRIVE_CLIENT_ID'
-];
-
-const missingCredentials = requiredCredentials.filter(key => !process.env[key]);
-
-if (missingCredentials.length > 0) {
-  const errorMessage = `Missing required Google Drive credentials: ${missingCredentials.join(', ')}. Please ensure all required environment variables are set.`;
-  console.error(errorMessage);
-  console.error('Current environment:', {
-    NODE_ENV: process.env.NODE_ENV,
-    PWD: process.cwd(),
-  });
-  throw new Error(errorMessage);
-}
-
-const auth = new GoogleAuth({
-  credentials,
-  scopes: ['https://www.googleapis.com/auth/drive.file']
-});
-
-const drive = google.drive({
-  version: 'v3',
-  auth: auth
 });
 
 // POST endpoint to handle file uploads

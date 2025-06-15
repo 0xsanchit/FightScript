@@ -16,6 +16,8 @@ const users_1 = __importDefault(require("./routes/users"));
 const stats_1 = __importDefault(require("./routes/stats"));
 const upload_1 = __importDefault(require("./routes/upload"));
 const chess_1 = __importDefault(require("./routes/chess"));
+const agents_1 = __importDefault(require("./routes/agents"));
+const token_1 = __importDefault(require("./routes/token"));
 // Load environment variables based on NODE_ENV
 if (process.env.NODE_ENV === 'production') {
     dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env.production') });
@@ -77,10 +79,12 @@ healthRouter.get('/', (req, res) => {
 // Routes
 app.use('/api/competitions', competitions_1.default);
 app.use('/api/users', users_1.default);
+app.use('/api/agents', agents_1.default);
 app.use('/api/stats', stats_1.default);
 app.use('/api/upload', upload_1.default);
 app.use('/api/chess', chess_1.default);
 app.use('/health', healthRouter);
+app.use('/api/token', token_1.default);
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
