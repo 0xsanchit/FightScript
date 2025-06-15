@@ -70,6 +70,10 @@ const UserSchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
+    balance: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -89,6 +93,9 @@ const UserSchema = new mongoose_1.Schema({
     activities: [{
             type: mongoose_1.default.Schema.Types.ObjectId,
             ref: 'Activity'
+        }],
+    deposits: [{
+            type: String
         }]
 });
 exports.default = mongoose_1.default.model('User', UserSchema);

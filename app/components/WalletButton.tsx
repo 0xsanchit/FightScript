@@ -39,7 +39,7 @@ function floatStringToBigIntScaled(floatStr: string): bigint {
 }
 
 export function WalletButton() {
-  const { connected, select,wallets,wallet, disconnect, publicKey,sendTransaction,signTransaction } = useWallet();
+  const { connected, select,wallets,wallet, disconnect, publicKey,sendTransaction,signTransaction,WalletNotConnectedError } = useWallet();
   const { connection } = useConnection();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [balance, setBalance] = useState<number | null>(null)

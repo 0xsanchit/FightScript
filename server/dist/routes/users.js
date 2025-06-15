@@ -36,6 +36,7 @@ router.get('/', async (req, res) => {
 });
 // GET /api/users/:id - Get user by wallet address
 router.get('/:id', async (req, res) => {
+    console.log("Getting user");
     try {
         const walletAddress = req.params.id;
         console.log('Received wallet address:', walletAddress); // Debug log

@@ -12,6 +12,8 @@ export interface LeaderboardEntry {
   wins: number
   losses: number
   draws: number
+  owner: string
+  rating: number
 }
 
 interface LeaderboardComponentProps {
