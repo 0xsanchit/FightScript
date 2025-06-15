@@ -1,13 +1,5 @@
 {
     "version":2,
     "builds":[{"src":"./src/index.ts","use":"@vercel/node"}],
-    "routes":[{"src":"/(.*)","dest":"/"}],
-    "headers": [
-        {
-          "source": "/api/(.*)",
-          "headers": [
-            { "key": "Access-Control-Allow-Origin", "value": "*" },
-          ]
-        }
-      ]
+    "routes":[{"src":"/(.*)","dest":"/"}]
 }

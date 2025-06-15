@@ -31,7 +31,8 @@ const allowedOrigins = [
   'https://co3pe.vercel.app/',
   'https://co3pe-git-main-rudraksh-joshis-projects-444a4ec5.vercel.app',
   'https://co3pe-j8uapg95q-rudraksh-joshis-projects-444a4ec5.vercel.app',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  '*'
 ];
 
 console.log('Allowed CORS origins:', allowedOrigins);
@@ -39,18 +40,18 @@ console.log('Allowed CORS origins:', allowedOrigins);
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('Request with no origin allowed');
-      return callback(null, true);
-    }
+    // if (!origin) {
+    //   console.log('Request with no origin allowed');
+    //   return callback(null, true);
+    // }
     
-    console.log('Request origin:', origin);
+    // console.log('Request origin:', origin);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('Origin not allowed:', origin);
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
+    // if (allowedOrigins.indexOf(origin) === -1) {
+    //   console.log('Origin not allowed:', origin);
+    //   const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    //   return callback(new Error(msg), false);
+    // }
     
     console.log('Origin allowed:', origin);
     return callback(null, true);
