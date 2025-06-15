@@ -280,7 +280,7 @@ export default function ChessCompetition() {
     } else {
       setIsLoading(false);
     }
-  }, [publicKey, fetchUserData,connected]);
+  }, [publicKey, fetchUserData,connected,fetchCompetition]);
 
   const fetchLeaderboard = async () => {
     try {

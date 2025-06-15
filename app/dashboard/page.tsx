@@ -283,7 +283,7 @@ export default function DashboardPage() {
                         </TableHeader>
                         <TableBody>
                           {agent.map(entry => (
-                          <TableRow>
+                          <TableRow key={entry._id}>
                           <TableCell>{entry.name}</TableCell>
                           <TableCell className="text-right">{entry.status=='active' ? entry.rank : '-'}</TableCell>
                           <TableCell className="text-right">{entry.status || 'inactive'}</TableCell>
