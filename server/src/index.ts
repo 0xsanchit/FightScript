@@ -102,5 +102,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`Server URL: ${process.env.NODE_ENV === 'production' ? 'https://co3pe.onrender.com' : 'http://localhost:5000'}`);
+  console.log(`Server URL: ${process.env.NODE_ENV === 'production' ? 'https://fight-script-server.vercel.app/' : 'http://localhost:5000'}`);
 });
