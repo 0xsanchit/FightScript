@@ -276,7 +276,6 @@ export default function DashboardPage() {
                             <TableHead className="text-right">Rank</TableHead>
                             <TableHead className="text-right">Status</TableHead>
                             <TableHead className="text-right">Rating</TableHead>
-                            <TableHead className="text-right">Points</TableHead>
                             <TableHead className="text-right">Wins</TableHead>
                             <TableHead className="text-right">Draws</TableHead>
                             <TableHead className="text-right">Losses</TableHead>
@@ -289,7 +288,6 @@ export default function DashboardPage() {
                           <TableCell className="text-right">{entry.status=='active' ? entry.rank : '-'}</TableCell>
                           <TableCell className="text-right">{entry.status || 'inactive'}</TableCell>
                           <TableCell className="text-right font-bold text-blue-600">{entry.rating || 0}</TableCell>
-                          <TableCell className="text-right font-bold text-blue-600">{entry.points || 0}</TableCell>
                           <TableCell className="text-right text-green-600">{entry.wins || 0}</TableCell>
                           <TableCell className="text-right text-yellow-600">{entry.draws || 0}</TableCell>
                           <TableCell className="text-right text-red-600">{entry.losses || 0}</TableCell>
